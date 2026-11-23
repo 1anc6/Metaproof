@@ -112,7 +112,7 @@ function Progress({ job, filename, preview }: { job: Job | null; filename?: stri
 
   return (
     <div>
-      <PageHeader title="Reading the evidence" subtitle="Six checks run on the file, then the evidence is weighed." />
+      <PageHeader eyebrow="Analysis under way" title="Reading the evidence" subtitle="Six checks run on the file, then the evidence is weighed." />
 
       {/* One column on phones, set explicitly: an implicit column would grow to the caption's
           unwrapped width and push both panels off the side of the screen. */}

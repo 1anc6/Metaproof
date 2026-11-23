@@ -1,4 +1,4 @@
-import '@fontsource-variable/figtree'
+import '@fontsource-variable/inter'
 import './index.css'
 
 import { StrictMode } from 'react'

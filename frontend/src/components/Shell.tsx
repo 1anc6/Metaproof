@@ -1,26 +1,43 @@
-import { History, House, ImagePlus, Lightbulb, Moon, PanelLeftClose, PanelLeftOpen, Settings, Sun, X } from 'lucide-react'
+import {
+  ChevronRight,
+  History,
+  House,
+  ImagePlus,
+  Keyboard,
+  Laptop,
+  Lightbulb,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Search,
+  Settings,
+  Sun,
+  X,
+} from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Toaster } from 'sonner'
 import type { OrbState } from 'thinking-orbs'
+import { useHistory } from '../lib/history'
 import { useServerStatus, type ServerState } from '../lib/hooks'
 import { useLens } from '../lib/lens'
 import { useMetalSettings } from '../lib/metal'
 import { setPref, usePrefs } from '../lib/prefs'
 import { useThemeSync } from '../lib/theme'
 import { AddMenu } from './AddMenu'
-import { LiveBadge } from './Metal'
+import { LiveBadge, MetalBezel } from './Metal'
 import { RouteBoundary } from './RouteBoundary'
 import { SummariesProvider } from './SummariesProvider'
 import { ThinkingOrb } from './ThinkingOrb'
 import { Logo, Mark, ThemeToggle } from './ui'
 
 const NAV = [
-  { to: '/', label: 'Overview', icon: House, end: true },
-  { to: '/new', label: 'New analysis', icon: ImagePlus, hint: 'N' },
-  { to: '/history', label: 'History', icon: History },
-  { to: '/method', label: 'Method', icon: Lightbulb },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/', label: 'Overview', icon: House, end: true, section: 'Workspace' },
+  { to: '/new', label: 'New analysis', icon: ImagePlus, hint: 'N', section: 'Workspace' },
+  { to: '/history', label: 'History', icon: History, section: 'Workspace' },
+  { to: '/method', label: 'Method', icon: Lightbulb, section: 'Learn' },
+  { to: '/settings', label: 'Settings', icon: Settings, section: 'Learn' },
 ]
 
 /** The current screen's place in `items`, or -1. An analysis belongs to the history it was opened from. */
@@ -41,16 +58,16 @@ function useDesktop() {
   )
 }
 
-/** A field that can take the "/" shortcut: the overview's search, or the history list's own. */
+/** A field that can take the "/" shortcut: the history list's own search while it is open, else the top bar's. */
 const searchField = () =>
-  [document.getElementById('global-search'), document.getElementById('history-search')].find((el) => el?.offsetParent) ?? null
+  [document.getElementById('history-search'), document.getElementById('global-search'), document.getElementById('overview-search')].find((el) => el?.offsetParent) ?? null
 
 /**
- * The frame of every screen, after the smart-home reference: a grainy room lies under everything,
- * and one large pane of frosted glass in front of it holds the page. On a desktop the pane floats
- * inside the window with the room round its edge, and a rail of icons runs down its left side,
- * opening out to the screens' names on request. Phones and tablets get the glass edge to edge, a
- * slim top bar, and a floating tab bar along the bottom with a lime button for a new analysis.
+ * The frame of every screen, after the Atelier dashboard reference: a pale grey room lies under
+ * everything, with a faint pane of glass in front of it. On a desktop a sidebar card floats down
+ * the left, and a top bar with the screen's place, a search and the theme runs over the page.
+ * Phones and tablets get a slim top bar and a floating tab bar along the bottom with a polished +
+ * for a new analysis.
  */
 export function Shell() {
   const { pathname } = useLocation()
@@ -99,7 +116,7 @@ export function Shell() {
         <a href="#main" className="btn-primary no-print fixed top-3 left-3 z-[60] -translate-y-20 focus-visible:translate-y-0">
           Skip to content
         </a>
-        <div className="relative lg:grid lg:min-h-[calc(100dvh-32px)] lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-5 lg:rounded-[40px] lg:p-4 print:block print:p-0">
+        <div className="relative lg:grid lg:min-h-[calc(100dvh-32px)] lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-7 lg:rounded-[40px] lg:p-4 print:block print:p-0">
           <div className="frame-glass" aria-hidden>
             <div className="frame-clip">
               <Room className="backdrop frame-room" />
@@ -107,13 +124,13 @@ export function Shell() {
             </div>
           </div>
           {/* One navigation at a time, so its server check and its links exist once. */}
-          {isDesktop && <Rail theme={theme} open={railOpen} />}
-          <div className="min-w-0">
-            {!isDesktop && <TopBar theme={theme} />}
+          {isDesktop && <Rail open={railOpen} onShortcuts={() => setShortcuts((open) => !open)} />}
+          <div className="min-w-0 lg:pr-4">
+            {isDesktop ? <DeskBar theme={theme} onShortcuts={() => setShortcuts((open) => !open)} /> : <TopBar theme={theme} />}
             <main
               id="main"
               tabIndex={-1}
-              className="@container mx-auto w-full max-w-[1320px] px-4 pt-2 pb-[calc(112px+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-2 lg:pt-3 lg:pb-3"
+              className="@container mx-auto w-full max-w-[1280px] px-4 pt-2 pb-[calc(112px+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-0 lg:pt-0 lg:pb-6"
             >
               <RouteBoundary pathname={pathname}>
                 <Outlet />
@@ -221,53 +238,107 @@ export function ServerBadge({ compact = false, chip = false }: { compact?: boole
 }
 
 /**
- * The rail, after the reference's left panel: a column of glass with the screens as icons, the
- * chosen one on a lighter tile. Opened out, it shows their names; the server's state, the theme
- * and the switch that opens it sit at its foot, where the reference keeps its power button. The
- * names stay in the page while it is closed, so every icon keeps its name for screen readers.
+ * The sidebar, after the reference's: the name at the top, a card for this browser's history, the
+ * one action as an ink pill in a ring of liquid metal, the screens in two sections under a lens of
+ * glass, and at the foot the server's state on a card of its own, LIVE in metal once it answers.
+ * Folded, only the icons show; their names stay in the page for screen readers.
  */
-function Rail({ theme, open }: { theme: 'light' | 'dark'; open: boolean }) {
+function Rail({ open, onShortcuts }: { open: boolean; onShortcuts: () => void }) {
   const nav = useRef<HTMLElement>(null)
   const lens = useRef<HTMLSpanElement>(null)
-  useLens(nav, lens, current(NAV, useLocation().pathname), 'y')
-  const next = theme === 'dark' ? 'light' : 'dark'
-  const ThemeIcon = theme === 'dark' ? Sun : Moon
+  const { pathname } = useLocation()
+  useLens(nav, lens, current(NAV, pathname), 'y')
+  const kept = useHistory().length
   const Toggle = open ? PanelLeftClose : PanelLeftOpen
   const toggle = open ? 'Collapse sidebar' : 'Expand sidebar'
   return (
     <aside className="no-print sticky top-8 h-[calc(100dvh-64px)] self-start">
-      <div className="rail flex h-full flex-col rounded-[30px] p-3" data-open={open}>
-        <Link to="/" aria-label="MetaProof" title={open ? undefined : 'MetaProof, overview'} className="rail-item !px-[19px] !text-ink hover:!bg-transparent">
-          <Mark className="size-[26px] shrink-0" />
-          <span translate="no" className="rail-label !text-[17px] !font-semibold tracking-[-0.015em]">
-            MetaProof
+      <div className="rail flex h-full flex-col overflow-hidden rounded-[22px] p-3" data-open={open}>
+        <div className="flex h-11 items-center justify-between">
+          <Link to="/" aria-label="MetaProof" title={open ? undefined : 'MetaProof, overview'} className="flex items-center gap-2.5 rounded-full px-[13px] text-ink">
+            <Mark className="size-[26px] shrink-0" />
+            <span translate="no" className="rail-label text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap">
+              MetaProof
+            </span>
+          </Link>
+          {open && (
+            <button type="button" onClick={() => setPref('railOpen', false)} aria-label={toggle} title={`${toggle} ([)`} className="grid size-9 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-[var(--color-hover)] hover:text-ink">
+              <Toggle className="size-[18px]" strokeWidth={1.6} aria-hidden />
+            </button>
+          )}
+        </div>
+
+        {/* where the reference keeps its workspace: this browser, which holds the history */}
+        <Link
+          to="/history"
+          title={open ? undefined : `History: ${kept} kept in this browser`}
+          className="row-raise mt-4 flex h-[52px] shrink-0 items-center gap-3 overflow-hidden rounded-[14px] px-2.5 whitespace-nowrap shadow-[var(--btn-edge)]"
+        >
+          <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-[var(--btn-bg)] text-ink shadow-[var(--btn-edge)]">
+            <Laptop className="size-4" strokeWidth={1.7} aria-hidden />
           </span>
+          <span className="rail-label flex min-w-0 flex-1 flex-col leading-tight">
+            <span className="text-[13px] font-medium text-ink">This browser</span>
+            <span className="text-meta text-faint">
+              {kept} {kept === 1 ? 'analysis' : 'analyses'} kept here
+            </span>
+          </span>
+          <ChevronRight className="rail-label size-4 shrink-0 text-faint" strokeWidth={1.8} aria-hidden />
         </Link>
-        <nav ref={nav} aria-label="Main" className="relative mt-5 flex flex-col gap-2">
-          <span ref={lens} className="lens rounded-[20px]" data-axis="y" aria-hidden>
+
+        <div className="relative mt-3 flex">
+          <MetalBezel inset={3} />
+          <Link to="/new" title="New analysis (N)" className="btn-primary relative h-11 w-full min-w-0 !justify-start gap-2.5 overflow-hidden !px-[17px] text-[14px]">
+            <Plus className="size-[18px] shrink-0" strokeWidth={2.2} aria-hidden />
+            <span className="rail-label flex-1 text-left">New analysis</span>
+            <kbd className="rail-label grid h-6 min-w-6 place-items-center rounded-md bg-[color-mix(in_srgb,var(--pill-ink)_14%,transparent)] px-1.5 text-[11.5px] font-semibold" aria-hidden>
+              N
+            </kbd>
+          </Link>
+        </div>
+
+        <nav ref={nav} aria-label="Main" className="relative mt-2 flex flex-col gap-0.5">
+          <span ref={lens} className="lens rounded-[14px]" data-axis="y" aria-hidden>
             <span />
           </span>
-          {NAV.map((item) => (
-            <RailLink key={item.to} {...item} open={open} />
+          {NAV.map((item, i) => (
+            <Fragment key={item.to}>
+              {item.section !== NAV[i - 1]?.section && (
+                <p className="rail-section eyebrow" aria-hidden>
+                  <span className="rail-label">{item.section}</span>
+                </p>
+              )}
+              <RailLink {...item} open={open} count={item.to === '/history' ? kept : undefined} />
+            </Fragment>
           ))}
         </nav>
-        <div className="mt-auto flex flex-col gap-2">
-          <ServerLine open={open} />
-          <button type="button" onClick={() => setPref('theme', next)} aria-label={`Switch to ${next} theme`} title={open ? undefined : `Switch to ${next} theme`} className="rail-item">
-            <ThemeIcon className="size-6 shrink-0" strokeWidth={1.6} aria-hidden />
-            <span className="rail-label">{next === 'dark' ? 'Dark theme' : 'Light theme'}</span>
-          </button>
-          <button type="button" onClick={() => setPref('railOpen', !open)} aria-label={toggle} title={`${toggle} ([)`} className="rail-item">
-            <Toggle className="size-6 shrink-0" strokeWidth={1.6} aria-hidden />
-            <span className="rail-label">Collapse</span>
-          </button>
+
+        <div className="mt-auto flex flex-col gap-2 pt-4">
+          <ServerCard open={open} />
+          {open ? (
+            <button type="button" onClick={onShortcuts} className="rail-item">
+              <span className="rail-icon">
+                <Keyboard className="size-[18px]" strokeWidth={1.6} aria-hidden />
+              </span>
+              <span className="rail-label flex-1 text-left">Shortcuts</span>
+              <kbd className="kbd rail-label" aria-hidden>
+                ?
+              </kbd>
+            </button>
+          ) : (
+            <button type="button" onClick={() => setPref('railOpen', true)} aria-label={toggle} title={`${toggle} ([)`} className="rail-item">
+              <span className="rail-icon">
+                <Toggle className="size-[18px]" strokeWidth={1.6} aria-hidden />
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </aside>
   )
 }
 
-function RailLink({ to, label, icon: Icon, end, hint, open }: (typeof NAV)[number] & { open: boolean }) {
+function RailLink({ to, label, icon: Icon, end, hint, open, count }: (typeof NAV)[number] & { open: boolean; count?: number }) {
   // An analysis belongs to the history it was opened from.
   const inHistory = useLocation().pathname.startsWith('/analysis/') && to === '/history'
   return (
@@ -278,33 +349,146 @@ function RailLink({ to, label, icon: Icon, end, hint, open }: (typeof NAV)[numbe
       title={open ? (hint ? `${label} (${hint})` : undefined) : hint ? `${label} (${hint})` : label}
       className={({ isActive }) => `rail-item ${isActive || inHistory ? 'is-on' : ''}`}
     >
-      <Icon className="size-6 shrink-0" strokeWidth={1.6} aria-hidden />
+      <span className="rail-icon">
+        <Icon className="size-[18px]" strokeWidth={1.6} aria-hidden />
+      </span>
       <span className="rail-label min-w-0 flex-1">{label}</span>
       {hint && (
         <kbd className="kbd rail-label" aria-hidden>
           {hint}
         </kbd>
       )}
+      {!!count && (
+        <span className="rail-label text-meta text-faint tabular-nums" aria-hidden>
+          {count}
+        </span>
+      )}
     </NavLink>
   )
 }
 
-/** The server's state as an orb or a dot, or LIVE in metal, with its words beside it once the rail
- *  is open. The badge is wider than an icon, so it hangs out either side of the icons' column. */
-function ServerLine({ open }: { open: boolean }) {
+/** The server's state on a card at the foot of the sidebar, where the reference shows its credits:
+ *  LIVE in metal once it answers, an orb while it is reached or wakes, a dot when it is down. */
+function ServerCard({ open }: { open: boolean }) {
   const state = useServerStatus()
   const s = SERVER_LABEL[state]
   return (
-    <p className="flex h-11 items-center gap-3.5 overflow-hidden px-5 whitespace-nowrap" title={open ? undefined : s.text}>
+    <div
+      className={`flex h-[60px] shrink-0 items-center gap-3 overflow-hidden rounded-[16px] whitespace-nowrap ${open ? 'px-3 shadow-[var(--btn-edge)]' : 'justify-center'}`}
+      style={open ? { background: 'var(--row-bg)' } : undefined}
+      title={open ? undefined : s.text}
+    >
       {state === 'online' ? (
-        <LiveBadge label={null} className="-mx-[10.5px]" />
+        <LiveBadge label={open ? null : s.text} className={open ? '' : '-mx-[10px]'} />
       ) : (
-        <span className="grid size-6 shrink-0 place-items-center">
+        <span className="grid size-7 shrink-0 place-items-center">
           <ServerMark state={state} size="size-2.5" />
         </span>
       )}
-      <span className="rail-label !text-[13.5px] !font-normal text-muted">{s.text}</span>
-    </p>
+      <span className="rail-label flex min-w-0 flex-col leading-tight">
+        <span className="text-[13px] font-medium text-ink">{s.text}</span>
+        <span className="text-meta text-faint">Analysis server</span>
+      </span>
+    </div>
+  )
+}
+
+/** Which screen is open, as the reference's "Workspace / Dashboard". */
+function crumbs(pathname: string): string[] {
+  if (pathname.startsWith('/analysis/')) return ['History', 'Analysis']
+  if (pathname.startsWith('/report/')) return ['Report']
+  const at = current(NAV, pathname)
+  return [at >= 0 ? NAV[at].label : 'Not found']
+}
+
+/**
+ * The desktop's top bar, after the reference's: where you are on the left; a search of the
+ * history, light or dark, and the shortcuts on the right, over a hairline that runs the page's width.
+ */
+function DeskBar({ theme, onShortcuts }: { theme: 'light' | 'dark'; onShortcuts: () => void }) {
+  const { pathname } = useLocation()
+  const trail = crumbs(pathname)
+  return (
+    <header className="no-print mb-7 flex h-[72px] items-center justify-between gap-4 border-b border-line">
+      <nav aria-label="Breadcrumb" className="min-w-0">
+        <ol className="flex items-center gap-2 text-[13px] whitespace-nowrap">
+          <li className="text-faint">
+            <Link to="/" className="rounded hover:text-ink">
+              MetaProof
+            </Link>
+          </li>
+          {trail.map((c, i) => (
+            <Fragment key={c}>
+              <li className="text-faint" aria-hidden>
+                /
+              </li>
+              <li className={i === trail.length - 1 ? 'font-medium text-ink' : 'text-faint'} aria-current={i === trail.length - 1 ? 'page' : undefined}>
+                {c}
+              </li>
+            </Fragment>
+          ))}
+        </ol>
+      </nav>
+      <div className="flex items-center gap-2.5">
+        <TopSearch />
+        <div className="track flex gap-0.5 rounded-full p-1" role="group" aria-label="Colour theme">
+          {(['light', 'dark'] as const).map((t) => {
+            const Icon = t === 'light' ? Sun : Moon
+            return (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={theme === t}
+                aria-label={`${t === 'light' ? 'Light' : 'Dark'} theme`}
+                title={`${t === 'light' ? 'Light' : 'Dark'} theme`}
+                onClick={() => setPref('theme', t)}
+                className={`grid size-8 place-items-center rounded-full transition ${theme === t ? 'selected' : 'text-faint hover:text-ink'}`}
+              >
+                <Icon className="size-4" strokeWidth={1.7} aria-hidden />
+              </button>
+            )
+          })}
+        </div>
+        <button type="button" onClick={onShortcuts} className="btn-primary !size-10 !p-0" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
+          <Keyboard className="size-[18px]" strokeWidth={1.7} aria-hidden />
+        </button>
+      </div>
+    </header>
+  )
+}
+
+/** Search by file name: Enter opens History with the words in its search box. Filenames stay in
+ *  this browser, so they travel in the router's state and never in the address. */
+function TopSearch() {
+  const navigate = useNavigate()
+  const [q, setQ] = useState('')
+  return (
+    <form
+      role="search"
+      onSubmit={(e) => {
+        e.preventDefault()
+        navigate('/history', { state: { q: q.trim() } })
+      }}
+    >
+      <label className="flex h-10 w-[240px] items-center gap-2.5 rounded-full pr-1.5 pl-3.5 text-faint transition-colors focus-within:bg-[var(--btn-bg)] focus-within:shadow-[var(--btn-edge)] hover:bg-[var(--btn-bg)] xl:w-[280px]">
+        <Search className="size-4 shrink-0" strokeWidth={1.8} aria-hidden />
+        <input
+          id="global-search"
+          name="q"
+          type="search"
+          aria-label="Search history"
+          autoComplete="off"
+          spellCheck={false}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search your history…"
+          className="min-w-0 flex-1 self-stretch bg-transparent text-[13.5px] text-ink outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
+        />
+        <kbd className="kbd" aria-hidden>
+          /
+        </kbd>
+      </label>
+    </form>
   )
 }
 
@@ -335,7 +519,7 @@ const releaseAfterTap = (e: React.MouseEvent<HTMLElement>) => {
  * The navigation on phones and tablets, after the floating tab bar and iOS references: a glass
  * capsule of four screens where the current one opens out to its name, under a lens of glass that
  * travels between them (press and drag along the bar to carry it, as on iOS), and beside it the
- * lime + that opens into a menu for a new analysis.
+ * polished + in its ring of metal, which opens into a menu for a new analysis.
  */
 function Dock() {
   const tabs = NAV.filter((n) => n.to !== '/new')

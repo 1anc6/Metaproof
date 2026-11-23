@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react'
 import { ThinkingOrb as Orb, type ModeFrame, type OrbSize, type OrbState } from 'thinking-orbs'
 import { fingerprint } from '../lib/orbs'
+import { useResolvedTheme } from '../lib/theme'
 
 /**
  * A thinking orb from libraries.dev (the thinking-orbs library): a dotted sphere whose motion says
- * what MetaProof is doing. MetaProof's glass is dark in both themes, so the ink is always light.
- * With `label` the orb is an image of that name; without one it is decoration beside words that
- * already say what is happening. Reduced motion holds it on one frame; offscreen and in a hidden
- * tab it stops drawing.
+ * what MetaProof is doing. Its ink follows the theme: dark dots on the light glass, light on the
+ * dark. With `label` the orb is an image of that name; without one it is decoration beside words
+ * that already say what is happening. Reduced motion holds it on one frame; offscreen and in a
+ * hidden tab it stops drawing.
  */
 export function ThinkingOrb({
   state,
@@ -23,11 +24,12 @@ export function ThinkingOrb({
   frame?: ModeFrame
   className?: string
 }) {
+  const theme = useResolvedTheme()
   return (
     <Orb
       state={state}
       size={size}
-      theme="dark"
+      theme={theme}
       frame={frame}
       aria-label={label}
       {...(!label && { role: 'presentation', 'aria-hidden': true })}

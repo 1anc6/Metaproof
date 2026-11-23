@@ -37,7 +37,19 @@ test('searching from the overview opens History with the words, and keeps them o
   await expect(page.getByText('holiday.jpg')).toBeVisible()
 })
 
-test('/ on a screen without search opens History ready to type', async ({ page }) => {
+test("/ on a desktop screen puts the top bar's search in hand, and Enter searches History", async ({ page }) => {
+  await page.goto('/method')
+  await page.keyboard.press('/')
+  const search = page.getByRole('searchbox', { name: 'Search history' })
+  await expect(search).toBeFocused()
+  await search.fill('holi')
+  await search.press('Enter')
+  await expect(page).toHaveURL(/\/history$/)
+  await expect(page.getByRole('searchbox', { name: 'Search by filename' })).toHaveValue('holi')
+})
+
+test('/ on a phone screen without search opens History ready to type', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/method')
   await page.keyboard.press('/')
   await expect(page).toHaveURL(/\/history$/)

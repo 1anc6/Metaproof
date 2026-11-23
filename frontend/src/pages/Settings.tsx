@@ -21,6 +21,7 @@ export function Settings() {
   return (
     <div>
       <PageHeader
+        eyebrow="This browser"
         title="Settings"
         subtitle="There are no accounts: everything here applies to this browser only."
       />
