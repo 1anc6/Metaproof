@@ -427,6 +427,11 @@
   html {
     color-scheme: light;
     -webkit-tap-highlight-color: transparent;
+    /* as in the reference, the page scrolls without a scrollbar down its side */
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
   }
   html[data-theme='dark'] {
     color-scheme: dark;

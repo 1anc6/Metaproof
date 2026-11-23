@@ -78,7 +78,10 @@ export function Overview() {
   return (
     <div className="flex flex-col gap-4">
       <Header checked={entries.length} flagged={flagged} span={span} now={now} />
-      <div className="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
+      {/* On a desktop the first two cards fit the first screen whole, as the reference's do, with
+          the next row just showing below them: the row takes the screen's height less what lies
+          above it, within bounds. */}
+      <div className="grid grid-cols-1 gap-4 [--top-h:clamp(340px,calc(100dvh-300px),480px)] @4xl/main:h-(--top-h) @4xl/main:grid-cols-2">
         <Hero flagged={flagged} known={t.known} span={span} waiting={waiting} />
         <Latest done={done} data={data} period={period} span={span} waiting={waiting} example={example} now={now} counts={t.counts} known={t.known} />
       </div>
@@ -214,26 +217,27 @@ function SearchPill({ className = '' }: { className?: string }) {
 function Hero({ flagged, known, span, waiting }: { flagged: number; known: number; span: string; waiting: boolean }) {
   const share = known ? flagged / known : 0
   return (
-    <section aria-labelledby="hero-title" className="panel @container relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] p-5 @lg:min-h-[400px] @lg:p-6">
+    <section aria-labelledby="hero-title" className="panel @container/hero relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] p-5 @lg:min-h-[400px] @lg:p-6 @4xl/main:min-h-0">
       <h2 id="hero-title" className="sr-only">
         Analyze an image
       </h2>
-      <div className="flex flex-1 items-center justify-center pt-6 pb-14">
-        <HeroForm busy={waiting} className="w-[min(58%,300px)] min-w-[180px] translate-x-[-4%]" />
+      <div className="flex flex-1 items-center justify-center pt-6 pb-14 @4xl/main:min-h-0 @4xl/main:pt-0 @4xl/main:pb-5">
+        <HeroForm busy={waiting} className="w-[min(58%,300px)] min-w-[180px] translate-x-[-4%] @4xl/main:w-[min(58%,300px,calc((var(--top-h)-170px)*1.17))] @4xl/main:min-w-0" />
       </div>
-      {/* the hero's own width decides: side by side when both fit, else one above the other */}
-      <div className="grid gap-3 @md:grid-cols-[auto_minmax(0,1fr)] @md:items-end @lg:flex @lg:justify-between">
+      {/* the hero's own width decides: the way in at the left and the flagged card at the right,
+          as the reference's pill and credits card, or one above the other where they don't fit */}
+      <div className="grid gap-3 @min-[22rem]/hero:flex @min-[22rem]/hero:items-end @min-[22rem]/hero:justify-between">
         <Link
           to="/new"
-          className="group flex h-12 items-center justify-between gap-5 rounded-full bg-[var(--btn-bg)] pr-1.5 pl-5 text-[13px] font-medium text-ink shadow-[var(--btn-edge)] transition-[transform,background-color] hover:bg-[var(--btn-hover)] active:scale-[0.98]"
+          className="group flex h-12 shrink-0 items-center justify-between gap-4 rounded-full bg-[var(--btn-bg)] pr-1.5 pl-5 text-[13px] font-medium whitespace-nowrap text-ink shadow-[var(--btn-edge)] transition-[transform,background-color] hover:bg-[var(--btn-hover)] active:scale-[0.98] @min-[22rem]/hero:pl-4"
         >
           Analyze an image
           <span className="grid size-9 place-items-center rounded-full bg-[var(--white-pill)] text-[var(--pill-ink)] transition-transform duration-300 ease-(--ease-out) group-hover:rotate-45">
             <ArrowUpRight className="size-4" strokeWidth={2} aria-hidden />
           </span>
         </Link>
-        <Link to="/history?filter=flagged" className="panel panel-ink group flex items-center gap-3.5 rounded-[18px] py-3 pr-4 pl-3">
-          <Ring share={share} size={54} width={3.5} figure={waiting ? '–' : `${Math.round(share * 100)}%`} />
+        <Link to="/history?filter=flagged" className="panel panel-ink group flex min-w-0 items-center gap-3 rounded-[18px] py-3 pr-3.5 pl-3">
+          <Ring share={share} size={50} width={3.5} figure={waiting ? '–' : `${Math.round(share * 100)}%`} />
           <span className="flex flex-col leading-tight">
             <span className="text-[12.5px] text-muted">Flagged {span}</span>
             <span className="mt-1 flex items-baseline gap-1.5">
@@ -241,7 +245,7 @@ function Hero({ flagged, known, span, waiting }: { flagged: number; known: numbe
               <span className="text-fine text-faint">of {known}</span>
             </span>
           </span>
-          <ArrowUpRight className="ml-auto size-4 self-start text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 @lg:ml-2" strokeWidth={1.8} aria-hidden />
+          <ArrowUpRight className="ml-auto size-4 shrink-0 self-start text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 @min-[22rem]/hero:ml-1" strokeWidth={1.8} aria-hidden />
         </Link>
       </div>
     </section>
@@ -635,7 +639,7 @@ function Latest({
         </h2>
         <PeriodPicker period={period} />
       </div>
-      <div className="mt-6 flex items-start justify-between gap-4">
+      <div className="mt-6 flex items-start justify-between gap-4 @4xl/main:mt-5">
         <div className="min-w-0">
           {latest && label ? (
             <>
@@ -673,7 +677,7 @@ function Latest({
       {latest ? (
         <Trail items={done.slice(0, 5).reverse()} data={data} now={now} />
       ) : (
-        <div className="relative mt-7" style={{ height: TRAIL_H }}>
+        <div className="relative mt-7 h-[120px] @4xl/main:mt-5 @4xl/main:h-auto @4xl/main:min-h-12 @4xl/main:flex-1">
           <Grid />
           <p className="absolute inset-0 grid place-items-center px-4 text-center text-[13px] text-faint">Your verdicts will line up here, newest on the right.</p>
         </div>
@@ -692,7 +696,7 @@ function Meters({ counts, known, waiting }: { counts: Record<VerdictLabel, numbe
     ['Inconclusive', counts.inconclusive],
   ]
   return (
-    <ul className="mt-auto grid grid-cols-3 gap-x-4 pt-7 @lg:gap-x-6">
+    <ul className="mt-auto grid grid-cols-3 gap-x-4 pt-7 @lg:gap-x-6 @4xl/main:pt-5">
       {rows.map(([name, n]) => (
         <li key={name} className="min-w-0">
           <div className="flex items-center justify-between gap-2 @max-sm:flex-col @max-sm:items-start @max-sm:gap-1">
@@ -759,11 +763,11 @@ function Trail({ items, data, now }: { items: HistoryEntry[]; data: Data; now: D
   // run the line on past the first and last points to the card's edges, as the reference does
   const path = smoothPath([{ x: -12, y: pts[0].y }, ...pts, { x: 112, y: pts[n - 1].y }])
   return (
-    <div className="mt-6">
+    <div className="mt-6 @4xl/main:mt-4 @4xl/main:flex @4xl/main:min-h-0 @4xl/main:flex-1 @4xl/main:flex-col">
       <p className="label text-[12px]">
         {n === 1 ? 'Your first verdict' : `Your last ${n} verdicts`}, higher is closer to AI-generated
       </p>
-      <div className="relative mt-3" style={{ height: TRAIL_H }} aria-hidden>
+      <div className="relative mt-3 h-[120px] @4xl/main:h-auto @4xl/main:min-h-12 @4xl/main:flex-1" aria-hidden>
         <Grid />
         <svg viewBox={`0 0 100 ${TRAIL_H}`} preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
           <path d={path} fill="none" stroke="var(--trail-line)" strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
@@ -774,7 +778,7 @@ function Trail({ items, data, now }: { items: HistoryEntry[]; data: Data; now: D
             <span
               key={items[i].jobId}
               className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--knob-fill)] ${last ? 'size-[13px]' : 'size-[9px]'}`}
-              style={{ left: `${p.x}%`, top: p.y, boxShadow: `inset 0 0 0 ${last ? 2.5 : 2}px var(--trail-line)` }}
+              style={{ left: `${p.x}%`, top: `${(p.y / TRAIL_H) * 100}%`, boxShadow: `inset 0 0 0 ${last ? 2.5 : 2}px var(--trail-line)` }}
             />
           )
         })}

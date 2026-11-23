@@ -13,7 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Fragment, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Toaster } from 'sonner'
 import type { OrbState } from 'thinking-orbs'
 import { useHistory } from '../lib/history'
@@ -73,22 +73,9 @@ export function Shell() {
   const theme = useThemeSync()
   const isDesktop = useDesktop()
   const { railOpen } = usePrefs()
-  // on a desktop the page scrolls inside the window, on phones the window itself
-  const scroller = useRef<HTMLDivElement>(null)
   useEffect(() => {
     window.scrollTo(0, 0)
-    scroller.current?.scrollTo(0, 0)
   }, [pathname])
-  // the scrollbar sits in the window's right margin, so the page keeps its width and ends where
-  // the top bar does (the bar's width varies with the system and the zoom)
-  useLayoutEffect(() => {
-    const el = scroller.current
-    if (!el || !isDesktop) return
-    const measure = () => el.parentElement?.style.setProperty('--gutter', `${el.offsetWidth - el.clientWidth}px`)
-    const watch = new ResizeObserver(measure)
-    watch.observe(el)
-    return () => watch.disconnect()
-  }, [isDesktop])
 
   const [shortcuts, setShortcuts] = useState(false)
 
@@ -122,14 +109,14 @@ export function Shell() {
 
   return (
     <SummariesProvider>
-      <div className="min-h-dvh lg:h-dvh lg:min-h-0 lg:p-4 print:h-auto print:p-0">
+      <div className="min-h-dvh lg:p-4 print:p-0">
         <Room className="backdrop" />
         <a href="#main" className="btn-primary no-print fixed top-3 left-3 z-[60] -translate-y-20 focus-visible:translate-y-0">
           Skip to content
         </a>
-        {/* On a desktop the window fits the screen, all four corners in view: the sidebar and the
-            top bar hold still and the page scrolls inside the window, under the top bar's rule. */}
-        <div className="relative lg:grid lg:h-full lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-7 lg:rounded-[40px] lg:p-4 print:block print:h-auto print:p-0">
+        {/* On a desktop the window runs on down the page, as in the reference: it scrolls with the
+            page and its foot comes up into view, while the sidebar holds still beside it. */}
+        <div className="relative lg:grid lg:min-h-[calc(100dvh-32px)] lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-7 lg:rounded-[40px] lg:p-4 print:block print:p-0">
           <div className="frame-glass" aria-hidden>
             <div className="frame-clip">
               <Room className="backdrop frame-room" />
@@ -138,22 +125,17 @@ export function Shell() {
           </div>
           {/* One navigation at a time, so its server check and its links exist once. */}
           {isDesktop && <Rail open={railOpen} />}
-          <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-col print:block">
+          <div className="min-w-0 lg:pr-4">
             {isDesktop ? <DeskBar theme={theme} /> : <TopBar theme={theme} />}
-            <div
-              ref={scroller}
-              className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pt-8 lg:pr-[max(0px,calc(16px-var(--gutter,0px)))] lg:[scrollbar-color:var(--color-line-strong)_transparent] lg:[scrollbar-gutter:stable] lg:[scrollbar-width:thin] print:overflow-visible print:p-0"
+            <main
+              id="main"
+              tabIndex={-1}
+              className="@container/main mx-auto w-full max-w-[1280px] px-4 pt-2 pb-[calc(112px+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-0 lg:pt-0 lg:pb-6"
             >
-              <main
-                id="main"
-                tabIndex={-1}
-                className="@container mx-auto w-full max-w-[1280px] px-4 pt-2 pb-[calc(112px+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-0 lg:pt-0 lg:pb-4"
-              >
-                <RouteBoundary pathname={pathname}>
-                  <Outlet />
-                </RouteBoundary>
-              </main>
-            </div>
+              <RouteBoundary pathname={pathname}>
+                <Outlet />
+              </RouteBoundary>
+            </main>
           </div>
         </div>
         {!isDesktop && <Dock />}
@@ -269,7 +251,7 @@ function Rail({ open }: { open: boolean }) {
   const kept = useHistory().length
   const toggle = open ? 'Collapse sidebar' : 'Expand sidebar'
   return (
-    <aside className="no-print h-full min-h-0">
+    <aside className="no-print sticky top-8 h-[calc(100dvh-64px)] self-start">
       <div className="rail flex h-full flex-col overflow-hidden rounded-[26px] p-3.5" data-open={open}>
         {/* the fold control stays at the top: beside the name when open, under it when folded */}
         <div className={`flex shrink-0 ${open ? 'h-11 items-center justify-between' : 'flex-col items-start gap-3'}`}>
@@ -391,7 +373,7 @@ function DeskBar({ theme }: { theme: 'light' | 'dark' }) {
   const { pathname } = useLocation()
   const trail = crumbs(pathname)
   return (
-    <header className="no-print mr-4 flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-[var(--hairline)]">
+    <header className="no-print mb-8 flex h-[72px] items-center justify-between gap-4 border-b border-[var(--hairline)]">
       <nav aria-label="Breadcrumb" className="min-w-0">
         <ol className="flex items-center gap-2.5 text-[12.5px] whitespace-nowrap">
           <li className="text-faint">

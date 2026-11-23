@@ -35,15 +35,28 @@ test("desktop: the sidebar runs the height of the glass window with the screens'
   await expect.poll(async () => (await page.locator('aside .rail').boundingBox())!.width).toBe(252)
 })
 
-test('desktop: the window fits the screen and the page scrolls inside it, with one fold control at the top and no extra buttons', async ({ page }) => {
+test('desktop: the first two cards fit the first screen whole, the page scrolls without a scrollbar, and the sidebar has one fold control at the top', async ({ page }) => {
   await seedHistory(page)
-  await page.setViewportSize({ width: 1258, height: 673 })
-  await page.goto('/')
-  await page.locator('main section').first().waitFor()
-  // the document never scrolls, so all four corners of the window stay in view
-  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(673)
-  const scroller = page.locator('#main').locator('..')
-  expect(await scroller.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+  for (const [width, height] of [
+    [1279, 676],
+    [1366, 657],
+    [1920, 1000],
+  ]) {
+    await page.setViewportSize({ width, height })
+    await page.goto('/')
+    const hero = page.getByRole('region', { name: 'Analyze an image' })
+    const latest = page.getByRole('region', { name: 'Latest analysis' })
+    await latest.waitFor()
+    for (const card of [hero, latest]) {
+      const box = (await card.boundingBox())!
+      expect(box.y + box.height, `${width}x${height}`).toBeLessThanOrEqual(height - 16)
+      // nothing in the card is cut off to make it fit
+      expect(await card.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1)
+    }
+  }
+  // the window runs on down the page, which scrolls as a whole, with no scrollbar down its side
+  expect(await page.evaluate(() => document.documentElement.scrollHeight > innerHeight)).toBe(true)
+  expect(await page.evaluate(() => innerWidth - document.documentElement.clientWidth)).toBe(0)
   // the sidebar is the screens and the server: the fold control sits by the name, open or folded
   const rail = (await page.locator('aside .rail').boundingBox())!
   for (const name of ['Collapse sidebar', 'Expand sidebar']) {
