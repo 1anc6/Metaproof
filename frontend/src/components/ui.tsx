@@ -275,14 +275,15 @@ export function Thumb({ sha, className = '', blur = false, eager = false }: { sh
  *  over one line of context, as the reference heads its pages. */
 export function PageHeader({ title, eyebrow, subtitle, action }: { title: string; eyebrow?: string; subtitle?: ReactNode; action?: ReactNode }) {
   return (
-    <header className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
+    <header className="mb-6 flex flex-col gap-5 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        {eyebrow && <p className="eyebrow mb-2.5">{eyebrow}</p>}
-        <h1 className="display text-[28px] leading-[1.05] sm:text-[38px]">{title}</h1>
-        {subtitle && <p className="mt-2.5 max-w-2xl text-[14px] leading-relaxed text-muted">{subtitle}</p>}
+        {eyebrow && <p className="eyebrow mb-3.5">{eyebrow}</p>}
+        {/* on phones as large as the width allows, after the reference's phone title */}
+        <h1 className="display text-[length:clamp(28px,9.2cqi,34px)] leading-[1.06] sm:text-[38px]">{title}</h1>
+        {subtitle && <p className="mt-3 max-w-2xl text-[14.5px] leading-[1.7] text-pretty text-muted sm:text-[14px] sm:leading-relaxed">{subtitle}</p>}
       </div>
-      {/* On phones the bar's centre button already starts an analysis, so it would only repeat it. */}
-      {action && <div className="no-print flex shrink-0 gap-2 max-sm:hidden">{action}</div>}
+      {/* on phones under the words, at the left, as the reference's "Start creating" */}
+      {action && <div className="no-print flex shrink-0 gap-2 max-sm:self-start">{action}</div>}
     </header>
   )
 }
@@ -369,27 +370,6 @@ export function ThemeSwitch({ labels = false, stretch = false, className = '' }:
         </button>
       ))}
     </div>
-  )
-}
-
-/** One tap between light and dark. */
-export function ThemeToggle({ resolved, className = 'size-10' }: { resolved: 'light' | 'dark'; className?: string }) {
-  const next = resolved === 'dark' ? 'light' : 'dark'
-  const Icon = resolved === 'dark' ? Sun : Moon
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        switchTheme(next, e.currentTarget)
-        // after a tap, let go of focus so its ring doesn't linger round the button (some Android
-        // browsers keep it); a keyboard press has `detail` 0 and keeps it
-        if (e.detail > 0) e.currentTarget.blur()
-      }}
-      className={`icon-btn ${className}`}
-      aria-label={`Switch to ${next} theme`}
-    >
-      <Icon className="size-[17px]" strokeWidth={1.6} />
-    </button>
   )
 }
 

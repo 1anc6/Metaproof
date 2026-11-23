@@ -168,12 +168,40 @@ test('phones: the hero card shows whole above the tab bar on landing', async ({ 
   }
 })
 
-test('phones: the overview opens with the period, search, the way in and the latest verdict above the fold', async ({ page }) => {
+test('phones: the overview opens with the period, a new analysis, the way in and the latest verdict above the fold', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await expect(page.getByRole('group', { name: 'Period' })).toBeInViewport()
-  await expect(page.getByRole('searchbox', { name: 'Search history' })).toBeInViewport()
+  await expect(page.locator('main header').getByRole('link', { name: 'New analysis' })).toBeInViewport()
   await expect(page.getByRole('link', { name: 'Analyze an image' })).toBeInViewport()
   await expect(page.getByRole('region', { name: 'Latest analysis' })).toBeInViewport()
+})
+
+test('phones: every screen opens under the top bar, a hairline beneath it, with the search, light or dark and the server', async ({ page }) => {
+  await seedHistory(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  for (const path of ['/', '/new', '/history', '/method', '/settings', '/server', `/report/${SHA}`]) {
+    await page.goto(path)
+    const bar = page.getByRole('banner')
+    await expect(bar.getByRole('link', { name: 'MetaProof' })).toBeVisible()
+    await expect(bar.getByRole('button', { name: 'Search history' })).toBeVisible()
+    await expect(bar.getByRole('group', { name: 'Colour theme' })).toBeVisible()
+    await expect(bar.getByTitle('API online')).toBeVisible()
+    const line = await bar.locator('> div').evaluate((el) => {
+      const style = getComputedStyle(el)
+      return [style.borderBottomWidth, style.borderBottomStyle]
+    })
+    expect(line, path).toEqual(['1px', 'solid'])
+    // the page starts with room under the line, at the same margins as the bar
+    const under = (await bar.boundingBox())!
+    const first = (await page.locator('main > *').first().boundingBox())!
+    expect(first.y - (under.y + under.height), path).toBeGreaterThanOrEqual(20)
+    expect(first.x, path).toBe(20)
+  }
+  // on a screen without the history's search, the bar's opens History ready to type
+  await page.goto('/')
+  await page.getByRole('banner').getByRole('button', { name: 'Search history' }).click()
+  await expect(page).toHaveURL(/\/history$/)
+  await expect(page.getByRole('searchbox', { name: 'Search by filename' })).toBeFocused()
 })
 

@@ -27,7 +27,7 @@ import { LiveBadge } from './Metal'
 import { RouteBoundary } from './RouteBoundary'
 import { SummariesProvider } from './SummariesProvider'
 import { ThinkingOrb } from './ThinkingOrb'
-import { Logo, Mark, ThemeToggle } from './ui'
+import { Logo, Mark } from './ui'
 
 const NAV = [
   { to: '/', label: 'Overview', icon: House, end: true, section: 'Workspace' },
@@ -58,7 +58,7 @@ function useDesktop() {
 
 /** A field that can take the "/" shortcut: the history list's own search while it is open, else the top bar's. */
 const searchField = () =>
-  [document.getElementById('history-search'), document.getElementById('global-search'), document.getElementById('overview-search')].find((el) => el?.offsetParent) ?? null
+  [document.getElementById('history-search'), document.getElementById('global-search')].find((el) => el?.offsetParent) ?? null
 
 /**
  * The frame of every screen, after the Atelier dashboard reference: a pale grey room lies under
@@ -130,7 +130,7 @@ export function Shell() {
             <main
               id="main"
               tabIndex={-1}
-              className="@container/main mx-auto w-full max-w-[1280px] px-4 pt-2 pb-[calc(112px+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-0 lg:pt-0 lg:pb-6"
+              className="@container/main mx-auto w-full max-w-[1280px] px-5 pt-7 pb-[calc(112px+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-0 lg:pt-0 lg:pb-6"
             >
               <RouteBoundary pathname={pathname}>
                 <Outlet />
@@ -216,8 +216,8 @@ function ServerMark({ state, size }: { state: ServerState; size: string }) {
 
 /**
  * Live, the server's state is LIVE on a pill of liquid metal; until then an orb or a dot and its
- * words, on a glass chip when `chip`. `compact`: only the orb or dot below 380px, where the words
- * don't fit beside the name.
+ * words, on a glass chip when `chip`. `compact` (the phone bar): only the orb or dot, the words
+ * for screen readers and as a tooltip, so the bar's controls fit beside the name.
  */
 export function ServerBadge({ compact = false, chip = false }: { compact?: boolean; chip?: boolean }) {
   const state = useServerStatus()
@@ -225,16 +225,16 @@ export function ServerBadge({ compact = false, chip = false }: { compact?: boole
   if (state === 'online')
     return (
       <span title={s.text} className="flex">
-        <LiveBadge label={s.text} scale={chip ? 1.15 : 1} />
+        <LiveBadge label={s.text} scale={1} />
       </span>
     )
   const badge = (
     <span className="flex items-center gap-2 text-[13px] text-muted" title={s.text}>
       <ServerMark state={state} size="size-2" />
-      <span className={compact ? 'whitespace-nowrap max-[379px]:sr-only' : 'whitespace-nowrap'}>{s.text}</span>
+      <span className={compact ? 'sr-only' : 'whitespace-nowrap'}>{s.text}</span>
     </span>
   )
-  return chip ? <span className="chip h-10 px-3.5 max-[379px]:w-10 max-[379px]:justify-center max-[379px]:px-0">{badge}</span> : badge
+  return chip ? <span className={`chip h-10 ${compact ? 'w-10 justify-center px-0' : 'px-3.5'}`}>{badge}</span> : badge
 }
 
 /**
@@ -395,24 +395,7 @@ function DeskBar({ theme }: { theme: 'light' | 'dark' }) {
       </nav>
       <div className="flex items-center gap-2.5">
         <TopSearch />
-        <div className="track flex gap-0.5 rounded-full p-1" role="group" aria-label="Colour theme">
-          {(['light', 'dark'] as const).map((t) => {
-            const Icon = t === 'light' ? Sun : Moon
-            return (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={theme === t}
-                aria-label={`${t === 'light' ? 'Light' : 'Dark'} theme`}
-                title={`${t === 'light' ? 'Light' : 'Dark'} theme`}
-                onClick={(e) => switchTheme(t, e.currentTarget)}
-                className={`grid size-8 place-items-center rounded-full transition ${theme === t ? 'selected' : 'text-faint hover:text-ink'}`}
-              >
-                <Icon className="size-4" strokeWidth={1.7} aria-hidden />
-              </button>
-            )
-          })}
-        </div>
+        <ThemeSwitch theme={theme} />
       </div>
     </header>
   )
@@ -450,17 +433,67 @@ function TopSearch() {
   )
 }
 
-/** Phones and tablets: the name on the left; the server's state and the theme on the right. */
-function TopBar({ theme }: { theme: 'light' | 'dark' }) {
+/** Light or dark, as a track with a disc under the one in use, after the reference's switch. */
+function ThemeSwitch({ theme }: { theme: 'light' | 'dark' }) {
   return (
-    <header className="no-print relative z-30 px-4 pt-[env(safe-area-inset-top)] sm:px-6 lg:hidden">
-      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3">
+    <div className="track flex shrink-0 gap-0.5 rounded-full p-1" role="group" aria-label="Colour theme">
+      {(['light', 'dark'] as const).map((t) => {
+        const Icon = t === 'light' ? Sun : Moon
+        return (
+          <button
+            key={t}
+            type="button"
+            aria-pressed={theme === t}
+            aria-label={`${t === 'light' ? 'Light' : 'Dark'} theme`}
+            title={`${t === 'light' ? 'Light' : 'Dark'} theme`}
+            onClick={(e) => {
+              switchTheme(t, e.currentTarget)
+              releaseAfterTap(e)
+            }}
+            className={`grid size-8 place-items-center rounded-full transition ${theme === t ? 'selected' : 'text-faint hover:text-ink'}`}
+          >
+            <Icon className="size-4" strokeWidth={1.7} aria-hidden />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * Phones and tablets, after the reference's phone bar: the name on the left; a search of the
+ * history, light or dark and the server's state on the right; a hairline under it on every screen,
+ * as the desktop's top bar has. Clipped at the screen's sides: LIVE's glow at the right edge
+ * would otherwise widen the page.
+ */
+function TopBar({ theme }: { theme: 'light' | 'dark' }) {
+  const navigate = useNavigate()
+  return (
+    <header className="no-print relative z-30 overflow-x-clip px-5 pt-[env(safe-area-inset-top)] sm:px-6 lg:hidden">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 border-b border-[var(--hairline)]">
         <Link to="/" className="rounded-full">
           <Logo />
         </Link>
-        <div className="flex items-center gap-3">
-          <ServerBadge compact chip />
-          <ThemeToggle resolved={theme} />
+        <div className="flex items-center gap-1.5">
+          {/* the history's own search when it is open, else History ready to type */}
+          <button
+            type="button"
+            aria-label="Search history"
+            title="Search history"
+            onClick={(e) => {
+              releaseAfterTap(e)
+              const field = document.getElementById('history-search')
+              if (field?.offsetParent) field.focus()
+              else navigate('/history', { state: { focus: true } })
+            }}
+            className="grid size-10 shrink-0 place-items-center rounded-full text-ink transition-colors hover:bg-[var(--color-hover)] max-[359px]:hidden"
+          >
+            <Search className="size-[19px]" strokeWidth={1.7} aria-hidden />
+          </button>
+          <ThemeSwitch theme={theme} />
+          <span className="ml-1">
+            <ServerBadge compact chip />
+          </span>
         </div>
       </div>
     </header>

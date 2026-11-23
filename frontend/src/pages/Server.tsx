@@ -31,11 +31,11 @@ export function Server() {
   const { status, failed, samples } = useServiceStatus(REFRESH_MS, KEEP)
   return (
     <div className="flex flex-col gap-4">
-      <header className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header className="mb-3 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <p className="eyebrow">Analysis server</p>
-          <h1 className="display mt-3 text-[34px] leading-[1.02] sm:text-[52px]">Server usage</h1>
-          <p className="mt-3 text-[13.5px] text-muted">Live figures from the API, read every 5 seconds while this page is open.</p>
+          <h1 className="display mt-3.5 text-[length:clamp(28px,9.2cqi,34px)] leading-[1.06] sm:text-[52px] sm:leading-[1.02]">Server usage</h1>
+          <p className="mt-3 text-[14.5px] leading-[1.7] text-pretty text-muted sm:text-[13.5px] sm:leading-normal">Live figures from the API, read every 5 seconds while this page is open.</p>
         </div>
         <button
           type="button"

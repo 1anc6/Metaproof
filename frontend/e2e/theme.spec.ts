@@ -30,13 +30,16 @@ test('follows the system theme until one is picked, then remembers it', async ({
   await themeIs(page, 'light')
 })
 
-test('the top bar toggles between light and dark', async ({ page }) => {
+test("the phone top bar's switch picks light or dark, and shows which is in use", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ colorScheme: 'light' })
   await page.goto('/')
-  await page.getByRole('button', { name: 'Switch to dark theme' }).click()
+  const theme = page.getByRole('banner').getByRole('group', { name: 'Colour theme' })
+  await expect(theme.getByRole('button', { name: 'Light theme' })).toHaveAttribute('aria-pressed', 'true')
+  await theme.getByRole('button', { name: 'Dark theme' }).click()
   await themeIs(page, 'dark')
-  await page.getByRole('button', { name: 'Switch to light theme' }).click()
+  await expect(theme.getByRole('button', { name: 'Dark theme' })).toHaveAttribute('aria-pressed', 'true')
+  await theme.getByRole('button', { name: 'Light theme' }).click()
   await themeIs(page, 'light')
 })
 

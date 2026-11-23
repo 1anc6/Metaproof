@@ -7,13 +7,12 @@ import {
   Image as ImageIcon,
   Images as ImagesIcon,
   Plus,
-  Search,
   ShieldAlert,
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { api, type Job, type VerdictLabel } from '../lib/api'
 import { DEMO_SHA } from '../lib/checks'
 import { DEMO_REPORT_PATH } from '../lib/demo'
@@ -71,6 +70,7 @@ export function Overview() {
   const span = PERIODS.find((p) => p.key === period)!.span
   const done = entries.filter((e) => data[e.jobId]?.status === 'done' && data[e.jobId]?.label)
   const firstVisit = history.length === 0
+  const topRow = useRowTop()
   const example = useExample(firstVisit)
   const waiting = loading && entries.length > 0
   const flagged = t.counts.edited + t.counts.likely_ai_generated
@@ -81,7 +81,7 @@ export function Overview() {
       {/* On a desktop the first two cards fit the first screen whole, as the reference's do, with
           the next row just showing below them: the row takes the screen's height less what lies
           above it, within bounds. */}
-      <div className="grid grid-cols-1 gap-4 [--top-h:clamp(340px,calc(100dvh-300px),480px)] @4xl/main:h-(--top-h) @4xl/main:grid-cols-2">
+      <div ref={topRow} className="grid grid-cols-1 gap-4 [--top-h:clamp(340px,calc(100dvh-300px),480px)] @4xl/main:h-(--top-h) @4xl/main:grid-cols-2">
         <Hero flagged={flagged} known={t.known} span={span} waiting={waiting} />
         <Latest history={history} done={done} data={data} period={period} span={span} waiting={waiting} example={example} now={now} counts={t.counts} known={t.known} />
       </div>
@@ -125,27 +125,48 @@ function useExample(wanted: boolean) {
   return wanted ? job : null
 }
 
+/**
+ * Phones and tablets: where the first row starts on the page, as `--row-top` on it, so the hero can
+ * take what is left of the first screen above the tab bar however many lines the header comes to.
+ * Measured again whenever the header's height changes (the width, the fonts, the counts).
+ */
+function useRowTop() {
+  const ref = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const row = ref.current
+    const header = row?.previousElementSibling
+    if (!row || !header) return
+    const measure = () => row.style.setProperty('--row-top', `${Math.round(row.getBoundingClientRect().top + window.scrollY)}px`)
+    measure()
+    const watch = new ResizeObserver(measure)
+    watch.observe(header)
+    return () => watch.disconnect()
+  }, [])
+  return ref
+}
+
 const greeting = (now: Date) => (now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening')
 
 /**
  * The reference's header: a small capital line, the title, a line of what is in the workspace,
- * and on the right one white pill for a new analysis (on phones, the search in its place).
+ * and on the right a pill for a new analysis (on phones under the words).
  */
 function Header({ checked, flagged, span, now }: { checked: number; flagged: number; span: string; now: Date }) {
   return (
-    <header className="mb-3 flex flex-col gap-4 @4xl:flex-row @4xl:items-center @4xl:justify-between">
+    <header className="flex flex-col gap-5 @4xl:mb-3 @4xl:flex-row @4xl:items-center @4xl:justify-between">
       <div className="min-w-0">
         <p className="eyebrow">Image authenticity</p>
-        <h1 className="display mt-3 text-[length:clamp(26px,8.4cqi,32px)] leading-[1.04] @lg:text-[44px]">Every image, explained.</h1>
-        <p className="mt-3 text-[13.5px] text-muted">
+        <h1 className="display mt-3.5 text-[length:clamp(26px,9.2cqi,34px)] leading-[1.04] @lg:text-[44px]">Every image, explained.</h1>
+        <p className="mt-3 text-[14.5px] leading-[1.7] text-pretty text-muted @lg:text-[13.5px] @lg:leading-normal">
           {greeting(now)}.{' '}
           {checked > 0
             ? `${checked} ${plural(checked, 'image')} checked and ${flagged} flagged ${span}.`
             : 'Check an image to see where it came from and whether it was changed.'}
         </p>
       </div>
-      <SearchPill className="min-w-0 lg:hidden" />
-      <Link to="/new" className="btn-ghost h-11 shrink-0 gap-2.5 self-start px-5 text-[14px] max-lg:hidden @4xl:self-auto">
+      {/* on phones under the words, at the left, as the reference's "Start creating"; its search
+          is in the phone bar */}
+      <Link to="/new" className="btn-ghost h-11 shrink-0 gap-2.5 self-start px-5 text-[14px] @4xl:self-auto">
         <Plus className="size-[18px]" strokeWidth={1.8} /> New analysis
       </Link>
     </header>
@@ -176,39 +197,6 @@ function PeriodPicker({ period }: { period: Period }) {
   )
 }
 
-/** Phones and tablets have no top bar search: search by file name from the header instead. Enter
- *  opens History with the words, which travel in the router's state and never in the address. */
-function SearchPill({ className = '' }: { className?: string }) {
-  const navigate = useNavigate()
-  const [q, setQ] = useState('')
-  return (
-    <form
-      role="search"
-      className={className}
-      onSubmit={(e) => {
-        e.preventDefault()
-        navigate('/history', { state: { q: q.trim() } })
-      }}
-    >
-      <label className="panel flex h-11 items-center gap-2.5 rounded-full pr-2 pl-4">
-        <Search className="size-4 shrink-0 text-faint" strokeWidth={1.8} aria-hidden />
-        <input
-          id="overview-search"
-          name="q"
-          type="search"
-          aria-label="Search history"
-          autoComplete="off"
-          spellCheck={false}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search your history…"
-          className="min-w-0 flex-1 self-stretch bg-transparent text-[14px] outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
-        />
-      </label>
-    </form>
-  )
-}
-
 /**
  * The hero, where the reference stands its chrome sculpture: a soft form of satin silver floating
  * over the glass. Below it, the way in as a white pill, and on an ink card the share of the
@@ -217,7 +205,7 @@ function SearchPill({ className = '' }: { className?: string }) {
 function Hero({ flagged, known, span, waiting }: { flagged: number; known: number; span: string; waiting: boolean }) {
   const share = known ? flagged / known : 0
   return (
-    <section aria-labelledby="hero-title" className="panel @container/hero relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] p-5 @lg:min-h-[400px] @lg:p-6 @4xl/main:min-h-0 max-lg:h-(--hero-h) max-lg:min-h-0 max-lg:[--hero-h:clamp(300px,calc(100svh-365px),440px)]">
+    <section aria-labelledby="hero-title" className="panel @container/hero relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] p-5 @lg:min-h-[400px] @lg:p-6 @4xl/main:min-h-0 max-lg:h-(--hero-h) max-lg:min-h-0 max-lg:[--hero-h:clamp(280px,calc(100svh_-_var(--row-top,300px)_-_76px_-_max(12px,env(safe-area-inset-bottom))),440px)]">
       <h2 id="hero-title" className="sr-only">
         Analyze an image
       </h2>
