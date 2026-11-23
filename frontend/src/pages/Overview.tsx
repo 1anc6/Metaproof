@@ -221,10 +221,10 @@ function Hero({ flagged, known, span, waiting }: { flagged: number; known: numbe
       <div className="flex flex-1 items-center justify-center pt-6 pb-14">
         <HeroForm busy={waiting} className="w-[min(58%,300px)] min-w-[180px] translate-x-[-4%]" />
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="grid gap-3 @lg:flex @lg:flex-wrap @lg:items-end @lg:justify-between">
         <Link
           to="/new"
-          className="group flex h-12 items-center gap-5 rounded-full bg-[var(--btn-bg)] pr-1.5 pl-5 text-[13px] font-medium text-ink shadow-[var(--btn-edge)] transition-[transform,background-color] hover:bg-[var(--btn-hover)] active:scale-[0.98]"
+          className="group flex h-12 items-center justify-between gap-5 rounded-full bg-[var(--btn-bg)] pr-1.5 pl-5 text-[13px] font-medium text-ink shadow-[var(--btn-edge)] transition-[transform,background-color] hover:bg-[var(--btn-hover)] active:scale-[0.98]"
         >
           Analyze an image
           <span className="grid size-9 place-items-center rounded-full bg-[var(--white-pill)] text-[var(--pill-ink)] transition-transform duration-300 ease-(--ease-out) group-hover:rotate-45">
@@ -240,7 +240,7 @@ function Hero({ flagged, known, span, waiting }: { flagged: number; known: numbe
               <span className="text-fine text-faint">of {known}</span>
             </span>
           </span>
-          <ArrowUpRight className="ml-2 size-4 self-start text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.8} aria-hidden />
+          <ArrowUpRight className="ml-auto size-4 self-start text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 @lg:ml-2" strokeWidth={1.8} aria-hidden />
         </Link>
       </div>
     </section>
@@ -359,7 +359,7 @@ function FigureTile({
       <span className="mt-2.5 flex items-center justify-between gap-3">
         <span className="text-fine text-faint">{caption}</span>
         {bar !== undefined && (
-          <span className="h-1 w-12 shrink-0 overflow-hidden rounded-full bg-[var(--track-bg)]" aria-hidden>
+          <span className="h-1 w-12 shrink-0 overflow-hidden rounded-full bg-[var(--track-bg)] @max-lg:hidden" aria-hidden>
             <span className="block h-full rounded-full bg-[var(--color-ink)]" style={{ width: `${bar * 100}%` }} />
           </span>
         )}

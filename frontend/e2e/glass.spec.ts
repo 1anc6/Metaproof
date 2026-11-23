@@ -43,26 +43,35 @@ test('phones: dragging along the bar opens the tab it is let go over', async ({ 
   await expect(nav.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
 })
 
-test('phones: the + opens into a menu of ways in, and Escape closes it back into the button', async ({ page }) => {
+test('phones: the + opens the bar into a panel of ways in, and Escape closes it back into the bar', async ({ page }) => {
   await page.goto('/')
   const plus = page.getByRole('button', { name: 'New analysis' })
   await plus.click()
   await expect(plus).toHaveAttribute('aria-expanded', 'true')
   const menu = page.getByRole('group', { name: 'New analysis' })
-  await expect(menu.getByRole('button', { name: 'Choose a photo' })).toBeFocused()
-  await expect(menu.getByRole('button', { name: 'Paste an image' })).toBeVisible()
-  await expect(menu.getByRole('button', { name: 'See an example' })).toBeVisible()
+  await expect(menu.getByRole('button', { name: 'Photo' })).toBeFocused()
+  for (const name of ['Upload', 'Paste', 'Example', 'Search']) await expect(menu.getByRole('button', { name })).toBeVisible()
+  // nothing analyzed in this browser yet, so there is no latest analysis to open
+  await expect(menu.getByRole('button', { name: 'Latest' })).toBeDisabled()
+  // the panel takes the bar's place, as wide as it, and the bar is out of reach under it
+  const bar = (await page.locator('.dock-bar').boundingBox())!
+  const panel = (await menu.boundingBox())!
+  expect(Math.abs(panel.x - bar.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(panel.width - bar.width)).toBeLessThanOrEqual(1)
+  expect(Math.abs(panel.y + panel.height - (bar.y + bar.height))).toBeLessThanOrEqual(1)
+  await expect(page.locator('.dock-bar')).toHaveAttribute('inert', '')
 
   await page.keyboard.press('Escape')
   await expect(menu).toBeHidden()
   await expect(plus).toBeFocused()
   await expect(plus).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.locator('.dock-bar')).not.toHaveAttribute('inert')
 })
 
 test('phones: a photo chosen from the + menu is analyzed straight away', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'New analysis' }).click()
-  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Choose a photo' }).click()])
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Photo' }).click()])
   await chooser.setFiles(PHOTO)
   await expect(page).toHaveURL(new RegExp(`/analysis/${JOB_ID}$`))
 })

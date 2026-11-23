@@ -4,7 +4,9 @@ type Axis = 'x' | 'y'
 type Span = { at: number; size: number }
 
 const TRAVEL_MS = 420
-const LIFT = 1.12 // how much larger the lens is than the pill while it is lifted
+// how much larger the lens is than the pill while it is lifted: a tab bar's swells to the bar's
+// full height and a little past it, as on iOS; the rail's, which is taller, less
+const LIFT: Record<Axis, number> = { x: 1.24, y: 1.12 }
 const STRETCH = 0.18 // how much longer it grows along its path at full speed
 
 const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -76,7 +78,7 @@ class Lens {
     this.moving = false
     this.pointer = null
     this.setLifted(true)
-    this.draw(this.at, LIFT, LIFT)
+    this.draw(this.at, LIFT[this.axis], LIFT[this.axis])
   }
 
   /** Carries the lifted lens so its middle sits under the pointer, within the bar. */
@@ -87,7 +89,7 @@ class Lens {
     const size = this.at.size
     const inset = 6
     this.pointer = client - start
-    this.draw({ at: Math.max(inset, Math.min(length - inset - size, client - start - size / 2)), size }, LIFT, LIFT)
+    this.draw({ at: Math.max(inset, Math.min(length - inset - size, client - start - size / 2)), size }, LIFT[this.axis], LIFT[this.axis])
   }
 
   /** Which item the finger let go of the lens over (or the lens's middle, if it was not carried); -1 for none. */
@@ -157,7 +159,7 @@ class Lens {
       // up at once (or already up from the press), level while it travels, down as it lands
       const rise = wasLifted ? 1 : Math.min(1, t / 0.15)
       const fall = t < 0.6 ? 1 : 1 - easeOut((t - 0.6) / 0.4)
-      const lift = 1 + (LIFT - 1) * rise * fall
+      const lift = 1 + (LIFT[this.axis] - 1) * rise * fall
       const speed = Math.sin(Math.PI * p) * Math.min(1, Math.abs(end.at - from.at) / 120)
       const along = lift * (1 + STRETCH * speed)
       const across = lift * (1 - STRETCH * 0.35 * speed)

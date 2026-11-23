@@ -35,28 +35,32 @@ test("desktop: the sidebar runs the height of the glass window with the screens'
   await expect.poll(async () => (await page.locator('aside .rail').boundingBox())!.width).toBe(252)
 })
 
-test('phones and tablets: a floating tab bar names the current screen, with New analysis floating beside it', async ({ page }) => {
+test('phones and tablets: a floating tab bar of four screens as icons, with New analysis floating beside it', async ({ page }) => {
   for (const width of [360, 390, 430, 768]) {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('/')
     const nav = page.getByRole('navigation', { name: 'Main' })
     await expect(nav.getByRole('link')).toHaveCount(4) // four screens; the + is a button that opens a menu
-    // only the current screen shows its name; the others keep theirs for screen readers
+    // icons only: each screen keeps its name for screen readers and as a tooltip
     const current = nav.getByRole('link', { name: 'Overview' })
     await expect(current).toHaveAttribute('aria-current', 'page')
-    await expect(current.getByText('Overview')).toBeVisible()
+    await expect(current).toHaveAttribute('title', 'Overview')
     await expect(nav.getByRole('link', { name: 'Settings' })).toBeVisible()
-    // the + floats to the right of the bar, and the pair sits centred with equal margins
+    // the + floats to the right of the bar, as tall as it, and the pair sits centred with equal margins
     const bar = (await nav.locator('.dock-bar').boundingBox())!
     const plus = (await nav.getByRole('button', { name: 'New analysis' }).boundingBox())!
     expect(plus.x).toBeGreaterThan(bar.x + bar.width)
+    expect(Math.round(plus.height)).toBe(Math.round(bar.height))
     expect(Math.abs(bar.x - (width - plus.x - plus.width))).toBeLessThanOrEqual(1)
-    // every tab is big enough to hit with a thumb
+    // the four share the bar equally, and each is big enough to hit with a thumb
+    const widths: number[] = []
     for (const tab of await nav.locator('.tab').all()) {
       const box = (await tab.boundingBox())!
+      widths.push(box.width)
       expect(box.width).toBeGreaterThanOrEqual(44)
       expect(box.height).toBeGreaterThanOrEqual(44)
     }
+    expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1)
   }
 })
 
@@ -72,7 +76,7 @@ test('phones: no screen is wider than the phone, down to 320px', async ({ page }
     [`/analysis/${JOB_ID}`, 'Looking for invisible watermarks…'],
     [`/report/${SHA}`, 'Key findings'],
     ['/history', 'holiday.jpg'],
-    ['/method', 'Detector accuracy'],
+    ['/method', 'Six independent checks'],
     ['/settings', 'Privacy and data'],
   ]
   for (const width of [320, 360, 390]) {
@@ -86,7 +90,7 @@ test('phones: no screen is wider than the phone, down to 320px', async ({ page }
   }
 })
 
-test('phones: choosing a tab moves the pill and the name to it', async ({ page }) => {
+test('phones: choosing a tab makes it the current screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   const nav = page.getByRole('navigation', { name: 'Main' })

@@ -28,7 +28,7 @@ test('a live server reads LIVE in metal: in the phone bar, in the rail, and by n
   await expect(shown(page, 'aside')).toBeVisible()
 })
 
-test("only the phone bar's + wears metal; the drop zone has neither metal nor an orb", async ({ page }) => {
+test("neither the drop zone nor the phone bar wears metal or an orb: the bar's + is plain glass", async ({ page }) => {
   await mockApi(page)
   await skipWelcome(page)
   await page.setViewportSize({ width: 390, height: 844 })
@@ -37,11 +37,10 @@ test("only the phone bar's + wears metal; the drop zone has neither metal nor an
   await expect(zone.getByRole('button', { name: 'Choose image' })).toBeVisible()
   await expect(zone.locator('.metal-fx-root')).toHaveCount(0)
   await expect(zone.locator('canvas')).toHaveCount(0)
-  // the + keeps its ring, and stays a button of its own size
-  const plus = page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'New analysis' })
-  await expect(page.locator('nav .metal-fx-root')).toBeVisible()
-  const box = (await plus.boundingBox())!
-  expect(Math.round(box.width)).toBe(58)
+  const nav = page.getByRole('navigation', { name: 'Main' })
+  await expect(nav.locator('.metal-fx-root')).toHaveCount(0)
+  const box = (await nav.getByRole('button', { name: 'New analysis' }).boundingBox())!
+  expect(Math.round(box.width)).toBe(64)
 })
 
 test('an analysis under way is LIVE in metal beside its name', async ({ page }) => {

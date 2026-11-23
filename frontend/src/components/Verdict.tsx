@@ -61,9 +61,9 @@ export function VerdictSpectrum({
           )
         })}
       </div>
-      <div className="mt-2 grid grid-cols-4 gap-1.5 text-meta leading-tight" aria-hidden>
-        {SEGMENTS.map((s) => (
-          <span key={s.key} className={s.key === label ? 'font-semibold text-ink' : 'text-faint'}>
+      <div className="mt-2 grid grid-cols-4 gap-1.5 text-meta leading-tight whitespace-nowrap @max-md:text-[11.5px] @max-md:tracking-[-0.01em]" aria-hidden>
+        {SEGMENTS.map((s, i) => (
+          <span key={s.key} className={`${i === 0 ? 'text-left' : i === SEGMENTS.length - 1 ? 'text-right' : 'text-center'} ${s.key === label ? 'font-semibold text-ink' : 'text-faint'}`}>
             {s.label}
           </span>
         ))}

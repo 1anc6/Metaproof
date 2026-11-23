@@ -94,7 +94,7 @@ export function History() {
               />
             </label>
           </div>
-          <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 sm:pb-0">
+          <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] max-sm:[mask-image:linear-gradient(90deg,transparent,#000_16px,#000_calc(100%-32px),transparent)] sm:mx-0 sm:px-0 sm:pb-0">
             <div className="track inline-flex gap-0.5 rounded-full p-1">
               {FILTERS.map((f) => (
                 <button

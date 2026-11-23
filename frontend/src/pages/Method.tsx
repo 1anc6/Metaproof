@@ -50,17 +50,22 @@ export function Method() {
       {/* On a phone the page runs to five screens, so the links stay at the top as frosted chrome. */}
       <nav
         aria-label="On this page"
-        className="-mx-4 mb-5 overflow-x-auto px-4 [scrollbar-width:none] max-sm:sticky max-sm:top-[max(8px,env(safe-area-inset-top))] max-sm:z-30 sm:mx-0 sm:px-0"
+        className="mb-5 max-sm:sticky max-sm:top-[max(8px,env(safe-area-inset-top))] max-sm:z-30"
       >
-        <div className="track inline-flex gap-0.5 rounded-full p-1 max-sm:[background:var(--glass-bg)] max-sm:[backdrop-filter:var(--glass-blur)] max-sm:[-webkit-backdrop-filter:var(--glass-blur)]">
+        <div className="track flex gap-0.5 rounded-full p-1 max-sm:shadow-[var(--dock-edge)] max-sm:[background:var(--dock-bg)] max-sm:[backdrop-filter:var(--glass-blur)] max-sm:[-webkit-backdrop-filter:var(--glass-blur)] sm:inline-flex">
           {[
-            ['#checks', 'The six checks'],
-            ['#verdict', 'The verdict'],
-            ['#accuracy', 'Detector accuracy'],
-            ['#privacy', 'Privacy'],
-          ].map(([href, label]) => (
-            <a key={href} href={href} className="flex h-9 shrink-0 items-center rounded-full px-4 text-[13.5px] whitespace-nowrap text-muted transition hover:bg-[var(--raise-bg)] hover:text-ink">
-              {label}
+            ['#checks', 'The six checks', 'Checks'],
+            ['#verdict', 'The verdict', 'Verdict'],
+            ['#accuracy', 'Detector accuracy', 'Accuracy'],
+            ['#privacy', 'Privacy', 'Privacy'],
+          ].map(([href, label, short]) => (
+            <a
+              key={href}
+              href={href}
+              className="flex h-9 min-w-0 items-center justify-center rounded-full px-4 text-[13.5px] whitespace-nowrap text-muted transition hover:bg-[var(--raise-bg)] hover:text-ink max-sm:flex-1 max-sm:px-2"
+            >
+              <span className="sm:hidden">{short}</span>
+              <span className="max-sm:hidden">{label}</span>
             </a>
           ))}
         </div>

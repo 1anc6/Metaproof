@@ -186,10 +186,18 @@
   --selected-bg: #ffffff;
   --selected-ink: #181919;
   --scrim: rgb(20 22 21 / 0.28);
-  --dock-rim: rgb(255 255 255 / 0.8);
-  --tab-pill: #121413;
-  --tab-pill-shadow: 0 1px 2px rgb(0 0 0 / 0.15), 0 8px 18px -8px rgb(0 0 0 / 0.45);
-  --tab-on-ink: #f9faf7;
+  /* the phone bar, after the floating tab bar reference: pale glass, a white rim, a soft shadow,
+     the chosen screen on a white pill */
+  --dock-bg: linear-gradient(180deg, rgb(252 252 252 / 0.8), rgb(236 237 238 / 0.74));
+  --dock-edge:
+    inset 0 0 0 1px rgb(255 255 255 / 0.9), inset 0 1.5px 0 rgb(255 255 255 / 1), inset 0 -1px 0 rgb(0 0 0 / 0.04),
+    0 1px 2px rgb(0 0 0 / 0.06), 0 14px 34px -14px rgb(0 0 0 / 0.32);
+  --dock-tile: rgb(20 22 21 / 0.05);
+  --dock-tile-press: rgb(20 22 21 / 0.1);
+  --tab-ink: #3d403c;
+  --tab-pill: #ffffff;
+  --tab-pill-shadow: 0 1px 2px rgb(0 0 0 / 0.1), 0 6px 16px -6px rgb(0 0 0 / 0.28);
+  --tab-on-ink: #121413;
   --tab-dim: rgb(24 25 25 / 0.58);
   --ring: #181919;
   --knob-fill: #fafaf8;
@@ -199,8 +207,6 @@
   --grid-dot: rgb(20 22 21 / 0.42);
   --hairline: rgb(255 255 255 / 0.75);
   /* the phone's +: a disc of polished ink */
-  --fab-face: radial-gradient(120% 120% at 30% 18%, #5a5c5b 0%, #232524 52%, #0c0d0d 100%);
-  --fab-ink: #f9faf7;
   /* the hero: the sculpture's shadow on the glass */
   --hero-shadow: rgb(0 0 0 / 0.32);
   --hero-form-filter: brightness(1.08);
@@ -284,7 +290,13 @@
   --selected-bg: rgb(255 255 255 / 0.15);
   --selected-ink: #ffffff;
   --scrim: rgb(0 0 0 / 0.6);
-  --dock-rim: rgb(255 255 255 / 0.1);
+  --dock-bg: linear-gradient(180deg, rgb(52 53 53 / 0.8), rgb(30 31 31 / 0.76));
+  --dock-edge:
+    inset 0 0 0 1px rgb(255 255 255 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.14), 0 1px 2px rgb(0 0 0 / 0.3),
+    0 16px 36px -14px rgb(0 0 0 / 0.75);
+  --dock-tile: rgb(255 255 255 / 0.06);
+  --dock-tile-press: rgb(255 255 255 / 0.12);
+  --tab-ink: #c9cbc6;
   --tab-pill: #f4f5f2;
   --tab-pill-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 18px -8px rgb(0 0 0 / 0.7);
   --tab-on-ink: #121413;
@@ -296,8 +308,6 @@
   --trail-ghost: rgb(244 245 242 / 0.3);
   --grid-dot: rgb(244 245 242 / 0.28);
   --hairline: rgb(255 255 255 / 0.09);
-  --fab-face: radial-gradient(120% 120% at 30% 18%, #ffffff 0%, #d9dad6 52%, #a2a49f 100%);
-  --fab-ink: #121413;
   --hero-shadow: rgb(0 0 0 / 0.85);
   --hero-form-filter: brightness(0.86) contrast(1.08);
 }
@@ -645,12 +655,46 @@
     background: var(--card-bg);
     box-shadow: var(--card-edge);
   }
-  /* a section's name: it folds away with the names, leaving its gap */
+  /* a section's name: it folds away with the names, leaving a short rule as the break */
   .rail-section {
+    position: relative;
     height: 36px;
     padding: 18px 14px 0;
     overflow: hidden;
     white-space: nowrap;
+    transition: height 320ms var(--ease-drawer);
+  }
+  .rail-section::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 1px;
+    margin-left: -9px;
+    background: var(--color-line);
+    opacity: 1;
+    transition: opacity 200ms ease 120ms;
+  }
+  .rail[data-open='false'] .rail-section {
+    height: 21px;
+  }
+  .rail[data-open='true'] .rail-section::after {
+    opacity: 0;
+    transition: opacity 100ms ease;
+  }
+  /* on a short window (a laptop with its browser's bars) everything still fits without scrolling */
+  @media (max-height: 760px) {
+    .rail .rail-item {
+      height: 38px;
+    }
+    .rail-section {
+      height: 30px;
+      padding-top: 12px;
+    }
+    .rail[data-open='false'] .rail-section {
+      height: 15px;
+    }
   }
 
   /* The liquid-glass selection (lib/lens.ts): one lens under the chosen item of a bar or the rail.
@@ -710,53 +754,69 @@
   }
   .dock-bar {
     --lens-bg: var(--tab-pill);
-    --lens-shadow: 0 8px 18px -8px rgb(0 0 0 / 0.45);
+    --lens-shadow: var(--tab-pill-shadow);
     /* a press and drag carries the lens, so no text selection or link preview gets in the way */
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
+  }
+  /* in the bar the pill clears into glass at once, so it travels as a clear lens */
+  .dock-bar .lens > span {
+    transition-duration: 110ms;
   }
   .rail {
     --lens-bg: var(--rail-on);
     --lens-shadow: none;
   }
 
-  /* The + menu (AddMenu): it grows out of the button, so its corner is the button's. */
-  .add-menu {
-    transform-origin: 100% 100%;
+  /* The + panel (AddMenu): the bar risen into a sheet of six ways in, each a tile of its own. */
+  .add-panel {
+    transform-origin: 50% 100%;
   }
-  .add-menu-tint {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: var(--color-primary);
-    opacity: 0;
-    pointer-events: none;
-  }
-  .add-menu-items {
-    transform-origin: 100% 100%;
-  }
-  .add-menu-item {
+  .add-tile {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
-    width: 100%;
-    height: 50px;
-    padding: 0 10px;
-    border-radius: 18px;
-    font-size: 15px;
+    justify-content: center;
+    gap: 7px;
+    height: 84px;
+    border-radius: 22px;
+    font-size: 13px;
     font-weight: 500;
-    text-align: left;
     color: var(--color-ink);
-    transition: background-color 150ms ease;
+    background: var(--dock-tile);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+    transition:
+      background-color 150ms ease,
+      transform 140ms var(--ease-out),
+      opacity 150ms ease;
   }
-  .add-menu-item:active {
-    background: var(--btn-hover);
+  .add-tile:active {
+    transform: scale(0.95);
+    background: var(--dock-tile-press);
+  }
+  .add-tile:disabled {
+    opacity: 0.4;
+    transform: none;
   }
   @media (hover: hover) {
-    .add-menu-item:hover {
-      background: var(--btn-bg);
+    .add-tile:not(:disabled):hover {
+      background: var(--dock-tile-press);
     }
+  }
+  /* the + beside the bar: the same glass, its cross turning to × while the panel is up */
+  .add-fab {
+    color: var(--color-ink);
+    transition: transform 160ms var(--ease-out);
+  }
+  .add-fab:active {
+    transform: scale(0.93);
+  }
+  .add-fab-icon {
+    transition: transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .add-fab[aria-expanded='true'] .add-fab-icon {
+    transform: rotate(45deg);
   }
   /* the names fade in once the rail has room for them, and out before it closes */
   .rail-label {
@@ -1078,86 +1138,40 @@
       0 10px 22px -10px rgb(0 0 0 / 0.55);
   }
 
-  /* The floating tab bar: a thicker glass, a brighter rim and a deeper shadow than a card, because
-     it floats over everything. */
-  .dock-bar {
-    box-shadow:
-      var(--panel-rim),
-      inset 0 0 0 1.5px var(--dock-rim),
-      0 2px 6px -2px rgb(0 0 0 / 0.16),
-      0 22px 44px -18px rgb(0 0 0 / 0.55);
+  /* The floating tab bar and the + beside it: pale glass with a white rim and a soft shadow,
+     because they float over everything. */
+  .dock-glass {
+    background: var(--dock-bg);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--dock-edge);
   }
-  /* A tab: it widens for the chosen screen; the pill and the name come in with it. */
+  /* A tab: its icon, dark on the white pill once the lens has landed under it. */
   .tab {
-    color: var(--color-faint);
+    color: var(--tab-ink);
     transition:
-      flex-grow 380ms var(--ease-drawer),
       color 200ms ease,
       transform 140ms var(--ease-out);
   }
   .tab:active {
-    transform: scale(0.96);
+    transform: scale(0.94);
   }
-  /* dark on the white pill once the lens has landed under it; white while it is lifted away */
   .tab.is-on {
     color: var(--tab-on-ink);
     transition:
-      flex-grow 380ms var(--ease-drawer),
       color 200ms ease 120ms,
       transform 140ms var(--ease-out);
   }
+  /* while the pill is lifted into clear glass, the chosen icon is no longer on white */
   .lens-lifted .tab.is-on {
     color: var(--color-ink);
     transition:
-      flex-grow 380ms var(--ease-drawer),
       color 120ms ease,
       transform 140ms var(--ease-out);
-  }
-  .tab-label {
-    max-width: 0;
-    opacity: 0;
-    transition:
-      max-width 380ms var(--ease-drawer),
-      opacity 160ms ease,
-      margin 380ms var(--ease-drawer);
-  }
-  .tab.is-on .tab-label {
-    max-width: 7rem;
-    margin-left: 0.5rem;
-    opacity: 1;
-    transition:
-      max-width 380ms var(--ease-drawer),
-      opacity 240ms ease 120ms,
-      margin 380ms var(--ease-drawer);
   }
   @media (hover: hover) {
     .tab:not(.is-on):hover {
       color: var(--color-ink);
-    }
-  }
-
-  /* The floating action: a glossy lime disc, lit from the top left, on a soft pool of its own light. */
-  .fab {
-    display: grid;
-    place-items: center;
-    border-radius: 9999px;
-    color: var(--fab-ink);
-    background: var(--fab-face);
-    box-shadow:
-      inset 0 1.5px 0 rgb(255 255 255 / 0.28),
-      inset 0 -8px 16px rgb(0 0 0 / 0.25),
-      0 4px 10px -4px rgb(0 0 0 / 0.35),
-      0 16px 30px -10px rgb(0 0 0 / 0.5);
-    transition:
-      transform 160ms var(--ease-out),
-      filter 160ms ease;
-  }
-  .fab:active {
-    transform: scale(0.94);
-  }
-  @media (hover: hover) {
-    .fab:hover {
-      filter: brightness(1.05);
     }
   }
 

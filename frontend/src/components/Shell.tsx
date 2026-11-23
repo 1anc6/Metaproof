@@ -282,7 +282,7 @@ function Rail({ open, onShortcuts }: { open: boolean; onShortcuts: () => void })
         <Link
           to="/history"
           title={open ? undefined : `History: ${kept} kept in this browser`}
-          className="rail-card mt-6 flex h-[58px] shrink-0 items-center gap-3 overflow-hidden rounded-[16px] px-[9px] whitespace-nowrap transition-transform active:scale-[0.98]"
+          className="rail-card mt-6 flex h-[58px] shrink-0 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:h-12 items-center gap-3 overflow-hidden rounded-[16px] px-[9px] whitespace-nowrap transition-transform active:scale-[0.98]"
         >
           <span className="grid size-[38px] shrink-0 place-items-center rounded-[11px] bg-[var(--track-bg)] text-ink shadow-[inset_0_0_0_1px_var(--color-line)]">
             <Laptop className="size-[17px]" strokeWidth={1.6} aria-hidden />
@@ -296,7 +296,7 @@ function Rail({ open, onShortcuts }: { open: boolean; onShortcuts: () => void })
           <ChevronRight className="rail-label mr-1 size-4 shrink-0 text-muted" strokeWidth={1.8} aria-hidden />
         </Link>
 
-        <Link to="/new" title="New analysis (N)" className="btn-primary relative mt-4 !h-11 w-full min-w-0 !justify-start gap-2.5 overflow-hidden !px-[15px] text-[14px]">
+        <Link to="/new" title="New analysis (N)" className="btn-primary relative mt-4 !h-11 w-full min-w-0 shrink-0 [@media(max-height:760px)]:mt-3 !justify-start gap-2.5 overflow-hidden !px-[15px] text-[14px]">
           <Plus className="size-[19px] shrink-0" strokeWidth={2} aria-hidden />
           <span className="rail-label flex-1 text-left">New analysis</span>
           <kbd className="rail-label pr-1 font-sans text-[12px] font-medium opacity-60" aria-hidden>
@@ -304,23 +304,26 @@ function Rail({ open, onShortcuts }: { open: boolean; onShortcuts: () => void })
           </kbd>
         </Link>
 
-        <nav ref={nav} aria-label="Main" className="relative mt-3 flex flex-col gap-1">
-          <span ref={lens} className="lens rounded-[14px]" data-axis="y" aria-hidden>
-            <span />
-          </span>
-          {NAV.map((item, i) => (
-            <Fragment key={item.to}>
-              {item.section !== NAV[i - 1]?.section && (
-                <p className="rail-section eyebrow" aria-hidden>
-                  <span className="rail-label">{item.section}</span>
-                </p>
-              )}
-              <RailLink {...item} open={open} count={item.to === '/history' ? kept : undefined} />
-            </Fragment>
-          ))}
-        </nav>
+        {/* on a short window the screens scroll, so the server card and the toggle stay in reach */}
+        <div className="-mx-1 mt-3 min-h-0 flex-1 overflow-y-auto px-1 [scrollbar-width:none]">
+          <nav ref={nav} aria-label="Main" className="relative flex flex-col gap-1">
+            <span ref={lens} className="lens rounded-[14px]" data-axis="y" aria-hidden>
+              <span />
+            </span>
+            {NAV.map((item, i) => (
+              <Fragment key={item.to}>
+                {item.section !== NAV[i - 1]?.section && (
+                  <p className="rail-section eyebrow" aria-hidden>
+                    <span className="rail-label">{item.section}</span>
+                  </p>
+                )}
+                <RailLink {...item} open={open} count={item.to === '/history' ? kept : undefined} />
+              </Fragment>
+            ))}
+          </nav>
+        </div>
 
-        <div className="mt-auto flex flex-col gap-3 pt-4">
+        <div className="flex shrink-0 flex-col gap-3 pt-3 [@media(max-height:760px)]:gap-2">
           <ServerCard open={open} />
           {open ? (
             /* where the reference has its signed-in person: a disc, a name and a line under it */
@@ -385,21 +388,26 @@ function ServerCard({ open }: { open: boolean }) {
   return (
     <Link
       to="/server"
-      className={`flex h-[64px] shrink-0 items-center gap-3 overflow-hidden rounded-[18px] whitespace-nowrap transition-transform active:scale-[0.98] ${open ? 'rail-card px-3.5' : 'justify-center'}`}
+      className={`flex shrink-0 items-center gap-3 overflow-hidden rounded-[18px] whitespace-nowrap transition-transform active:scale-[0.98] ${open ? 'rail-card h-[64px] px-3.5' : `h-12 justify-center [@media(max-height:760px)]:h-10`}`}
       title={open ? 'Server usage' : `${s.text}: server usage`}
     >
       {state === 'online' ? (
-        <LiveBadge label={open ? null : s.text} className={open ? '' : '-mx-[10px]'} />
+        <LiveBadge label={open ? null : s.text} scale={open ? 1 : 0.8} />
       ) : (
         <span className="grid size-7 shrink-0 place-items-center">
           <ServerMark state={state} size="size-2.5" />
         </span>
       )}
-      <span className="rail-label flex min-w-0 flex-1 flex-col gap-0.5 leading-tight">
-        <span className="text-[15px] font-semibold tracking-[-0.02em] text-ink">{s.text}</span>
-        <span className="text-[11.5px] text-faint">Analysis server</span>
-      </span>
-      <ChevronRight className="rail-label size-4 shrink-0 text-muted" strokeWidth={1.8} aria-hidden />
+      {/* folded, the name and the chevron would push the badge off the rail's edge */}
+      {open && (
+        <>
+          <span className="rail-label flex min-w-0 flex-1 flex-col gap-0.5 leading-tight">
+            <span className="text-[15px] font-semibold tracking-[-0.02em] text-ink">{s.text}</span>
+            <span className="text-[11.5px] text-faint">Analysis server</span>
+          </span>
+          <ChevronRight className="rail-label size-4 shrink-0 text-muted" strokeWidth={1.8} aria-hidden />
+        </>
+      )}
     </Link>
   )
 }
@@ -538,10 +546,11 @@ const releaseAfterTap = (e: React.MouseEvent<HTMLElement>) => {
 }
 
 /**
- * The navigation on phones and tablets, after the floating tab bar and iOS references: a glass
- * capsule of four screens where the current one opens out to its name, under a lens of glass that
- * travels between them (press and drag along the bar to carry it, as on iOS), and beside it the
- * polished + in its ring of metal, which opens into a menu for a new analysis.
+ * The navigation on phones and tablets, after the floating tab bar reference: a capsule of light
+ * glass holding four screens as icons, the current one on a white pill. Choosing another lifts the
+ * pill into a clear lens that slides across (the bar giving a little as it goes) and settles on the
+ * new one; press and drag along the bar to carry it, as on iOS. Beside it a round glass + opens the
+ * ways in, the bar rising into a panel of them.
  */
 function Dock() {
   // phones reach the server page from Settings, so the bar keeps four screens
@@ -549,78 +558,100 @@ function Dock() {
   const navigate = useNavigate()
   const active = current(tabs, useLocation().pathname)
   const bar = useRef<HTMLDivElement>(null)
+  const glass = useRef<HTMLSpanElement>(null)
   const lensEl = useRef<HTMLSpanElement>(null)
   const lens = useLens(bar, lensEl, active)
   // A press lifts the lens; moving the finger carries it, and letting go opens the tab under it.
   const press = useRef<{ id: number; x: number; carried: boolean } | null>(null)
   const swallowClick = useRef(false)
 
+  // the bar's glass gives a little in the direction the lens travels, and springs back
+  const was = useRef(active)
+  useEffect(() => {
+    const from = was.current
+    was.current = active
+    if (from < 0 || active < 0 || from === active || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const way = Math.sign(active - from)
+    glass.current?.animate(
+      [
+        { transform: 'none' },
+        { transform: `translateX(${way * 3}px) scale(1.03, 0.96)`, offset: 0.3 },
+        { transform: `translateX(${-way}px) scale(0.995, 1.01)`, offset: 0.7 },
+        { transform: 'none' },
+      ],
+      { duration: 520, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
+    )
+  }, [active])
+
   return (
     <nav
-      className="no-print fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-2.5 pr-[max(16px,env(safe-area-inset-right))] pb-[max(12px,env(safe-area-inset-bottom))] pl-[max(16px,env(safe-area-inset-left))] min-[400px]:gap-3 lg:hidden"
+      className="no-print fixed inset-x-0 bottom-0 z-40 flex items-end justify-center gap-3 pr-[max(16px,env(safe-area-inset-right))] pb-[max(12px,env(safe-area-inset-bottom))] pl-[max(16px,env(safe-area-inset-left))] lg:hidden"
       aria-label="Main"
     >
-      <div
-        ref={bar}
-        className="glass dock-bar relative flex h-16 w-full max-w-[360px] min-w-0 touch-none items-center gap-1 rounded-full p-1.5"
-        onPointerDown={(e) => {
-          if (e.button !== 0) return
-          swallowClick.current = false
-          press.current = { id: e.pointerId, x: e.clientX, carried: false }
-          lens.lift()
-        }}
-        onPointerMove={(e) => {
-          const p = press.current
-          if (!p || p.id !== e.pointerId) return
-          if (!p.carried) {
-            if (Math.abs(e.clientX - p.x) < 8) return
-            p.carried = true
-            e.currentTarget.setPointerCapture(e.pointerId)
-          }
-          lens.follow(e.clientX)
-        }}
-        onPointerUp={(e) => {
-          const p = press.current
-          press.current = null
-          if (!p || p.id !== e.pointerId) return
-          if (!p.carried) {
-            // a tap: the link navigates; a tap on the current screen just sets the lens down
-            if (!(e.target as Element).closest?.('[data-lens-item]:not(.is-on)')) lens.home()
-            return
-          }
-          swallowClick.current = true
-          const over = lens.drop()
-          if (over >= 0 && over !== active) navigate(tabs[over].to)
-          else lens.home()
-        }}
-        onPointerCancel={() => {
-          press.current = null
-          lens.home()
-        }}
-        onClickCapture={(e) => {
-          if (!swallowClick.current) return
-          swallowClick.current = false
-          e.preventDefault()
-          e.stopPropagation()
-        }}
-      >
-        <span ref={lensEl} className="lens rounded-full" data-axis="x" aria-hidden>
-          <span />
-        </span>
-        {tabs.map((item, i) => (
-          <Tab key={item.to} {...item} on={i === active} />
-        ))}
-      </div>
-      {/* the bar beside the + catches a glint of its metal ring */}
-      <AddMenu reflect={bar} />
+      <AddMenu bar={bar}>
+        <div
+          ref={bar}
+          className="dock-bar relative h-16 w-full touch-none rounded-full"
+          onPointerDown={(e) => {
+            if (e.button !== 0) return
+            swallowClick.current = false
+            press.current = { id: e.pointerId, x: e.clientX, carried: false }
+            lens.lift()
+          }}
+          onPointerMove={(e) => {
+            const p = press.current
+            if (!p || p.id !== e.pointerId) return
+            if (!p.carried) {
+              if (Math.abs(e.clientX - p.x) < 8) return
+              p.carried = true
+              e.currentTarget.setPointerCapture(e.pointerId)
+            }
+            lens.follow(e.clientX)
+          }}
+          onPointerUp={(e) => {
+            const p = press.current
+            press.current = null
+            if (!p || p.id !== e.pointerId) return
+            if (!p.carried) {
+              // a tap: the link navigates; a tap on the current screen just sets the lens down
+              if (!(e.target as Element).closest?.('[data-lens-item]:not(.is-on)')) lens.home()
+              return
+            }
+            swallowClick.current = true
+            const over = lens.drop()
+            if (over >= 0 && over !== active) navigate(tabs[over].to)
+            else lens.home()
+          }}
+          onPointerCancel={() => {
+            press.current = null
+            lens.home()
+          }}
+          onClickCapture={(e) => {
+            if (!swallowClick.current) return
+            swallowClick.current = false
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+        >
+          {/* the glass and what sits on it are layers of their own, so either can fade or blur
+              without the bar itself doing so, which would stop the glass frosting the page */}
+          <span ref={glass} className="dock-glass absolute inset-0 rounded-full" aria-hidden />
+          <div className="dock-items relative flex h-full items-center gap-1 p-1.5">
+            <span ref={lensEl} className="lens rounded-full" data-axis="x" aria-hidden>
+              <span />
+            </span>
+            {tabs.map((item, i) => (
+              <Tab key={item.to} {...item} on={i === active} />
+            ))}
+          </div>
+        </div>
+      </AddMenu>
     </nav>
   )
 }
 
-/**
- * One screen in the bar. The current one grows to make room for its name; the others shrink to
- * their icon, which keeps its name for screen readers and as a tooltip. The lens supplies the pill.
- */
+/** One screen in the bar, as its icon; its name is there for screen readers and as a tooltip. The
+ *  lens supplies the pill. */
 function Tab({ to, label, icon: Icon, end, on }: (typeof NAV)[number] & { on: boolean }) {
   return (
     <NavLink
@@ -630,14 +661,10 @@ function Tab({ to, label, icon: Icon, end, on }: (typeof NAV)[number] & { on: bo
       title={label}
       data-lens-item
       draggable={false}
-      className={`tab group relative flex h-full min-w-11 basis-0 items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)] ${
-        on ? 'is-on grow-[2.5]' : 'grow'
-      }`}
+      className={`tab relative flex h-full min-w-11 flex-1 basis-0 items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)] ${on ? 'is-on' : ''}`}
     >
-      <span className="relative flex min-w-0 items-center">
-        <Icon className="tab-icon size-[22px] shrink-0" strokeWidth={1.7} aria-hidden />
-        <span className="tab-label overflow-hidden text-[14.5px] font-semibold whitespace-nowrap">{label}</span>
-      </span>
+      <Icon className="size-[23px] shrink-0" strokeWidth={1.75} aria-hidden />
+      <span className="sr-only">{label}</span>
     </NavLink>
   )
 }
