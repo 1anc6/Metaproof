@@ -11,6 +11,7 @@ const SCREENS = [
   ['history', '/history'],
   ['method', '/method'],
   ['settings', '/settings'],
+  ['server', '/server'],
 ] as const
 
 for (const scheme of ['dark', 'light'] as const) {

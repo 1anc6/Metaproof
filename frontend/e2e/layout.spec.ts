@@ -102,7 +102,7 @@ test('desktop: the navigation sits in the sidebar, and nothing floats over the p
     await page.goto('/')
     const nav = page.getByRole('navigation', { name: 'Main' })
     await expect(nav).toHaveCount(1) // the phone bar is gone at this width
-    await expect(nav.getByRole('link')).toHaveCount(5)
+    await expect(nav.getByRole('link')).toHaveCount(6)
     expect((await nav.boundingBox())!.x).toBeLessThan(300)
     await expect(nav.getByRole('link', { name: 'New analysis' })).toBeVisible()
     // the app opens on the overview, not a landing page

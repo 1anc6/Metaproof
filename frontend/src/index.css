@@ -9,14 +9,14 @@
      is no brand colour: ink marks what is on or chosen, a solid pill does the acting, one panel in a
      row turns to ink as a contrast card, and the verdicts keep the only colour, a bright dot beside
      each word. Text tones are kept at 4.5:1 or more on the panels. */
-  --color-canvas: #efefed;
+  --color-canvas: #c9c9c9;
   --color-raised: rgb(0 0 0 / 0.045); /* wells, tracks, quiet fills */
   --color-hover: rgb(0 0 0 / 0.04);
-  --color-line: rgb(0 0 0 / 0.075);
+  --color-line: rgb(0 0 0 / 0.08);
   --color-line-strong: rgb(0 0 0 / 0.15);
   --color-ink: #181919;
-  --color-muted: #50534f;
-  --color-faint: #62655f;
+  --color-muted: #3b3e3a;
+  --color-faint: #4a4d48;
   --color-primary: #151716; /* ink: switched on, chosen, the bar in focus */
   --color-on-primary: #f9faf7;
   --color-on-light: #181919; /* type on the light pills */
@@ -118,65 +118,71 @@
   from { transform: rotate(0deg); }
 }
 
-/* Surface recipes that differ by theme. Light (pale grey glass) is the default; dark below. */
+/* Surface recipes that differ by theme. Light (grey studio glass) is the default; dark below. */
 :root {
-  /* the room behind the glass: a pale grey studio, lit from the top right, with two soft forms
-     standing in the light (the spans) and a fine grain */
+  /* the room behind the glass, after the reference: a mid-grey studio of tall curved surfaces, so
+     the light falls in soft vertical bands (darkest a third of the way in, brightest at the middle),
+     with curved ribbons of light and shade where the surfaces bend (the spans) and a fine grain */
   --bd-base:
-    radial-gradient(ellipse at 70% 5%, #fbfbf8 0%, rgb(251 251 248 / 0) 60%),
-    linear-gradient(125deg, #e6e7e2 0%, #f4f4f0 62%, #dfe1da 100%);
-  --bd-glow: rgb(255 255 255 / 0.85);
-  --bd-beam: rgb(255 255 255 / 0.7);
-  --bd-beam-tilt: -14deg;
-  --bd-beam-2: rgb(255 255 255 / 0.5);
-  --bd-pool: rgb(196 198 191 / 0.45);
-  --bd-form: radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.9), rgb(232 233 228 / 0.6) 46%, rgb(214 216 209 / 0) 72%);
-  --grain: 0.1;
-  /* the window: a faint pane round everything, the room showing at its edge */
-  --frame-bg: linear-gradient(170deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.1));
+    radial-gradient(120% 70% at 50% 0%, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0) 60%),
+    linear-gradient(93deg, #d0d0d0 0%, #c0c0c0 9%, #a3a3a3 20%, #868686 30%, #949494 35%, #b9b9b9 42%, #dbdbdb 49%, #e2e2e2 52%, #d2d2d2 58%, #bcbcbc 66%, #a6a6a6 75%, #a6a6a6 82%, #bdbdbd 88%, #b0b0b0 100%);
+  --bd-ribbon: rgb(255 255 255 / 0.55);
+  --bd-shade: rgb(60 60 60 / 0.22);
+  --bd-glow: rgb(255 255 255 / 0.22);
+  --grain: 0.08;
+  /* the window: a pane of frosted glass round everything, its bright rim catching the light */
+  --frame-bg: linear-gradient(170deg, rgb(255 255 255 / 0.24), rgb(255 255 255 / 0.17));
   --frame-saturate: 1;
-  --frame-solid: #efefed;
-  --frame-rim: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 0 0 1px rgb(255 255 255 / 0.55);
-  --frame-shadow: 0 1px 3px rgb(0 0 0 / 0.04), 0 30px 70px -40px rgb(0 0 0 / 0.3);
-  /* panels: a white wash, a bright rim (the ::before) and a soft drop shadow */
-  --panel-bg: linear-gradient(145deg, rgb(255 255 255 / 0.68) 0%, rgb(255 255 255 / 0.52) 100%);
-  --panel-solid: #fafaf8;
-  --panel-edge: linear-gradient(140deg, rgb(255 255 255 / 0.98), rgb(255 255 255 / 0.62) 40%, rgb(255 255 255 / 0.4) 64%, rgb(255 255 255 / 0.86));
-  --panel-rim: inset 0 1px 0 rgb(255 255 255 / 0.8);
-  --panel-shadow: 0 1px 2px rgb(0 0 0 / 0.03), 0 14px 34px -22px rgb(0 0 0 / 0.42);
-  --sheen: rgb(255 255 255 / 0.6);
+  --frame-solid: #e4e4e3;
+  --frame-rim: inset 0 0 0 1.5px rgb(255 255 255 / 0.62), inset 0 2px 0 rgb(255 255 255 / 0.7);
+  --frame-shadow: 0 1px 3px rgb(0 0 0 / 0.06), 0 40px 80px -40px rgb(0 0 0 / 0.35);
+  /* panels: nearly clear glass, so the room's bands show through, with a bright rim (the ::before) */
+  --panel-bg: linear-gradient(150deg, rgb(255 255 255 / 0.26) 0%, rgb(255 255 255 / 0.16) 100%);
+  --panel-solid: #f2f2f1;
+  --panel-edge: linear-gradient(150deg, rgb(255 255 255 / 0.98), rgb(255 255 255 / 0.62) 40%, rgb(255 255 255 / 0.5) 64%, rgb(255 255 255 / 0.9));
+  --panel-rim: inset 0 1px 0 rgb(255 255 255 / 0.5);
+  --panel-shadow: 0 1px 2px rgb(0 0 0 / 0.03), 0 22px 44px -30px rgb(0 0 0 / 0.4);
+  /* tiles: the small figure cards, a thicker white glass */
+  --tile-bg: linear-gradient(150deg, rgb(255 255 255 / 0.78) 0%, rgb(255 255 255 / 0.62) 100%);
+  --sheen: rgb(255 255 255 / 0.45);
   /* the contrast panel: ink, one to a row */
-  --ink-panel-bg: linear-gradient(145deg, #2a2c2b 0%, #121413 72%);
+  --ink-panel-bg: linear-gradient(150deg, #262827 0%, #121413 70%);
   --ink-panel-edge: linear-gradient(140deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0.04) 40%, rgb(255 255 255 / 0.02) 64%, rgb(255 255 255 / 0.1));
-  --ink-panel-shadow: 0 1px 2px rgb(0 0 0 / 0.1), 0 18px 36px -20px rgb(0 0 0 / 0.6);
-  /* the sidebar: a card of thicker glass */
-  --rail-bg: linear-gradient(180deg, rgb(255 255 255 / 0.8), rgb(255 255 255 / 0.68));
-  --rail-on: rgb(0 0 0 / 0.05);
+  --ink-panel-shadow: 0 1px 2px rgb(0 0 0 / 0.12), 0 20px 40px -20px rgb(0 0 0 / 0.6);
+  /* the sidebar: a card of thick, almost white glass */
+  --rail-bg: linear-gradient(180deg, rgb(250 250 250 / 0.94), rgb(247 247 247 / 0.9));
+  --rail-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 30px 60px -36px rgb(0 0 0 / 0.42);
+  --rail-on: transparent;
   --rail-on-shadow: none;
+  --card-bg: #ffffff; /* the white cards inside the sidebar */
+  --card-edge: inset 0 0 0 1px rgb(0 0 0 / 0.07);
   /* raised glass: the chosen item, a hovered row */
-  --raise-bg: rgb(255 255 255 / 0.88);
-  --raise-shadow: inset 0 1px 0 #fff, 0 8px 18px -12px rgb(0 0 0 / 0.28);
-  --row-bg: rgb(255 255 255 / 0.62);
+  --raise-bg: rgb(255 255 255 / 0.9);
+  --raise-shadow: inset 0 1px 0 #fff, 0 8px 18px -12px rgb(0 0 0 / 0.3);
+  --row-bg: rgb(255 255 255 / 0.5);
   /* floating chrome over scrolling content: the phone bars, menus, dialogs */
-  --glass-bg: linear-gradient(160deg, rgb(250 250 248 / 0.84), rgb(244 244 241 / 0.78));
+  --glass-bg: linear-gradient(160deg, rgb(248 248 248 / 0.86), rgb(238 238 237 / 0.8));
   --glass-blur: blur(28px) saturate(1.2);
-  --glass-solid: #f6f6f4;
-  --toast-bg: #fafaf8;
-  --btn-bg: rgb(255 255 255 / 0.66);
-  --btn-hover: rgb(255 255 255 / 0.95);
-  --btn-edge: inset 0 0 0 1px rgb(0 0 0 / 0.07);
+  --glass-solid: #f3f3f2;
+  --toast-bg: #fafaf9;
+  /* the white pills: Start creating, Let's make something */
+  --btn-bg: rgb(255 255 255 / 0.82);
+  --btn-hover: #ffffff;
+  --btn-edge: inset 0 0 0 1px rgb(255 255 255 / 0.9), 0 1px 2px rgb(0 0 0 / 0.05), 0 8px 20px -12px rgb(0 0 0 / 0.35);
   /* the acting pill: ink on the light glass */
   --white-pill: #121413;
   --white-pill-hover: #2b2d2c;
   --pill-ink: #f9faf7;
-  --zone-edge: rgb(0 0 0 / 0.18);
-  --zone-bg: rgb(255 255 255 / 0.36);
+  --zone-edge: rgb(0 0 0 / 0.2);
+  --zone-bg: rgb(255 255 255 / 0.3);
   --orb-face: radial-gradient(120% 120% at 50% 15%, #ffffff 0%, #d4d5d0 46%, #8a8c87 100%);
   --orb-rim: inset 0 2px 1px rgb(255 255 255 / 0.9), inset 0 -12px 26px rgb(0 0 0 / 0.18), 0 0 0 1px rgb(255 255 255 / 0.6);
   --orb-glow: rgb(0 0 0 / 0.2);
-  --track-bg: rgb(0 0 0 / 0.07);
+  --track-bg: rgb(255 255 255 / 0.42);
+  --track-edge: inset 0 0 0 1px rgb(255 255 255 / 0.7);
   --bar-bg: rgb(0 0 0 / 0.12);
-  --switch-off: rgb(0 0 0 / 0.14);
+  --meter-bg: rgb(0 0 0 / 0.1);
+  --switch-off: rgb(0 0 0 / 0.16);
   --selected-bg: #ffffff;
   --selected-ink: #181919;
   --scrim: rgb(20 22 21 / 0.28);
@@ -188,13 +194,16 @@
   --ring: #181919;
   --knob-fill: #fafaf8;
   --dial-tick: rgb(0 0 0 / 0.22);
-  --trail-line: rgb(24 25 25 / 0.78);
+  --trail-line: #141615;
+  --trail-ghost: rgb(20 22 21 / 0.28);
+  --grid-dot: rgb(20 22 21 / 0.42);
+  --hairline: rgb(255 255 255 / 0.75);
   /* the phone's +: a disc of polished ink */
   --fab-face: radial-gradient(120% 120% at 30% 18%, #5a5c5b 0%, #232524 52%, #0c0d0d 100%);
   --fab-ink: #f9faf7;
-  /* the hero: a glass disc round the large orb */
-  --hero-disc: radial-gradient(circle at 34% 26%, rgb(255 255 255 / 0.95), rgb(236 237 232 / 0.7) 48%, rgb(206 208 201 / 0.55) 100%);
-  --hero-shadow: rgb(0 0 0 / 0.28);
+  /* the hero: the sculpture's shadow on the glass */
+  --hero-shadow: rgb(0 0 0 / 0.32);
+  --hero-form-filter: brightness(1.08);
 }
 :root[data-theme='dark'] {
   --color-canvas: #0d0e0e;
@@ -220,34 +229,35 @@
   --color-dot-ai: #ff6a4f;
   --color-dot-neutral: #8f918c;
 
-  /* near-black, lit faintly from the top right */
+  /* the same studio at night: near-black curved surfaces, the bands of light faint */
   --bd-base:
-    radial-gradient(ellipse at 72% 0%, #2a2b2a 0%, rgb(42 43 42 / 0) 58%),
-    linear-gradient(160deg, #161717 0%, #0b0c0c 58%, #050505 100%);
-  --bd-glow: rgb(255 255 255 / 0.07);
-  --bd-beam: rgb(255 255 255 / 0.08);
-  --bd-beam-tilt: 18deg;
-  --bd-beam-2: rgb(255 255 255 / 0.05);
-  --bd-pool: rgb(255 255 255 / 0.04);
-  --bd-form: radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.03) 46%, rgb(255 255 255 / 0) 72%);
-  --grain: 0.22;
-  --frame-bg: linear-gradient(170deg, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0.015));
+    radial-gradient(120% 70% at 50% 0%, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0) 60%),
+    linear-gradient(93deg, #1e1f1f 0%, #18191a 9%, #101111 20%, #08090a 30%, #0d0e0e 35%, #1a1b1b 42%, #2a2b2b 49%, #2e2f2f 52%, #242525 58%, #1a1b1b 66%, #0f1010 75%, #0b0c0c 82%, #161717 88%, #101111 100%);
+  --bd-ribbon: rgb(255 255 255 / 0.07);
+  --bd-shade: rgb(0 0 0 / 0.4);
+  --bd-glow: rgb(255 255 255 / 0.05);
+  --grain: 0.2;
+  --frame-bg: linear-gradient(170deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.02));
   --frame-saturate: 1;
-  --frame-solid: #0f1010;
-  --frame-rim: inset 0 1px 0 rgb(255 255 255 / 0.09), inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  --frame-solid: #101111;
+  --frame-rim: inset 0 0 0 1.5px rgb(255 255 255 / 0.08), inset 0 2px 0 rgb(255 255 255 / 0.06);
   --frame-shadow: 0 2px 6px rgb(0 0 0 / 0.3), 0 40px 90px -36px rgb(0 0 0 / 0.9);
-  --panel-bg: linear-gradient(145deg, rgb(255 255 255 / 0.065) 0%, rgb(255 255 255 / 0.03) 100%);
+  --panel-bg: linear-gradient(150deg, rgb(255 255 255 / 0.06) 0%, rgb(255 255 255 / 0.025) 100%);
   --panel-solid: #191a1a;
-  --panel-edge: linear-gradient(140deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.05) 40%, rgb(255 255 255 / 0.03) 64%, rgb(255 255 255 / 0.11));
-  --panel-rim: inset 0 1px 0 rgb(255 255 255 / 0.06);
-  --panel-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 14px 34px -22px rgb(0 0 0 / 0.9);
+  --panel-edge: linear-gradient(150deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.06) 40%, rgb(255 255 255 / 0.04) 64%, rgb(255 255 255 / 0.12));
+  --panel-rim: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --panel-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 22px 44px -28px rgb(0 0 0 / 0.9);
+  --tile-bg: linear-gradient(150deg, rgb(255 255 255 / 0.09) 0%, rgb(255 255 255 / 0.05) 100%);
   --sheen: rgb(255 255 255 / 0.05);
-  --ink-panel-bg: linear-gradient(145deg, #fbfbf9 0%, #e3e4df 80%);
+  --ink-panel-bg: linear-gradient(150deg, #fbfbf9 0%, #e3e4df 80%);
   --ink-panel-edge: linear-gradient(140deg, rgb(255 255 255 / 1), rgb(255 255 255 / 0.5) 40%, rgb(255 255 255 / 0.3) 64%, rgb(255 255 255 / 0.8));
   --ink-panel-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 36px -20px rgb(0 0 0 / 0.9);
-  --rail-bg: linear-gradient(180deg, rgb(36 37 37 / 0.78), rgb(24 25 25 / 0.74));
-  --rail-on: rgb(255 255 255 / 0.07);
+  --rail-bg: linear-gradient(180deg, rgb(30 31 31 / 0.92), rgb(22 23 23 / 0.9));
+  --rail-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 30px 60px -30px rgb(0 0 0 / 0.9);
+  --rail-on: transparent;
   --rail-on-shadow: none;
+  --card-bg: rgb(255 255 255 / 0.05);
+  --card-edge: inset 0 0 0 1px rgb(255 255 255 / 0.08);
   --raise-bg: rgb(255 255 255 / 0.11);
   --raise-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 8px 18px -10px rgb(0 0 0 / 0.7);
   --row-bg: rgb(255 255 255 / 0.045);
@@ -255,9 +265,9 @@
   --glass-blur: blur(28px) saturate(1.2);
   --glass-solid: #1b1c1c;
   --toast-bg: #1d1e1e;
-  --btn-bg: rgb(255 255 255 / 0.075);
-  --btn-hover: rgb(255 255 255 / 0.13);
-  --btn-edge: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  --btn-bg: rgb(255 255 255 / 0.08);
+  --btn-hover: rgb(255 255 255 / 0.14);
+  --btn-edge: inset 0 0 0 1px rgb(255 255 255 / 0.09), 0 8px 20px -12px rgb(0 0 0 / 0.6);
   --white-pill: #f4f5f2;
   --white-pill-hover: #ffffff;
   --pill-ink: #121413;
@@ -266,8 +276,10 @@
   --orb-face: radial-gradient(120% 120% at 50% 15%, #ffffff 0%, #c8c9c4 46%, #7b7d78 100%);
   --orb-rim: inset 0 2px 1px rgb(255 255 255 / 0.8), inset 0 -12px 26px rgb(0 0 0 / 0.3), 0 0 0 1px rgb(255 255 255 / 0.14);
   --orb-glow: rgb(255 255 255 / 0.16);
-  --track-bg: rgb(255 255 255 / 0.08);
+  --track-bg: rgb(255 255 255 / 0.07);
+  --track-edge: inset 0 0 0 1px rgb(255 255 255 / 0.06);
   --bar-bg: rgb(255 255 255 / 0.14);
+  --meter-bg: rgb(255 255 255 / 0.12);
   --switch-off: rgb(255 255 255 / 0.14);
   --selected-bg: rgb(255 255 255 / 0.15);
   --selected-ink: #ffffff;
@@ -280,11 +292,14 @@
   --ring: #f4f5f2;
   --knob-fill: #1a1b1b;
   --dial-tick: rgb(255 255 255 / 0.28);
-  --trail-line: rgb(244 245 242 / 0.82);
+  --trail-line: #f4f5f2;
+  --trail-ghost: rgb(244 245 242 / 0.3);
+  --grid-dot: rgb(244 245 242 / 0.28);
+  --hairline: rgb(255 255 255 / 0.09);
   --fab-face: radial-gradient(120% 120% at 30% 18%, #ffffff 0%, #d9dad6 52%, #a2a49f 100%);
   --fab-ink: #121413;
-  --hero-disc: radial-gradient(circle at 34% 26%, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.05) 48%, rgb(255 255 255 / 0.02) 100%);
   --hero-shadow: rgb(0 0 0 / 0.85);
+  --hero-form-filter: brightness(0.86) contrast(1.08);
 }
 
 /* The room: a fixed grainy gradient under everything. The spans are its light, the ::after its
@@ -302,40 +317,37 @@
   position: absolute;
   border-radius: 9999px;
 }
-/* a window's light in the top-left corner */
+/* a curved ribbon of light where a tall surface bends, sweeping down the right */
 .backdrop > :nth-child(1) {
-  top: -26vmax;
-  left: -20vmax;
-  width: 64vmax;
-  height: 52vmax;
-  background: radial-gradient(closest-side, var(--bd-glow), transparent);
+  top: -30vh;
+  right: -46vw;
+  width: 96vw;
+  height: 170vh;
+  background: radial-gradient(closest-side, transparent 82%, var(--bd-ribbon) 91%, transparent 99%);
 }
-/* the long streak from the left edge: rising to the right in light, falling in dark */
+/* the shade on the inside of that bend */
 .backdrop > :nth-child(2) {
-  top: 50%;
-  left: -12vw;
+  top: -24vh;
+  right: -40vw;
   width: 84vw;
-  height: 30vh;
-  transform: rotate(var(--bd-beam-tilt));
-  background: radial-gradient(closest-side, var(--bd-beam), transparent);
+  height: 158vh;
+  background: radial-gradient(closest-side, transparent 84%, var(--bd-shade) 93%, transparent 100%);
 }
-/* a large soft form standing in the light at the top right, like the reference's sculpture */
+/* a second, lower bend in the bottom-left corner */
 .backdrop > :nth-child(3) {
-  top: -18vmax;
-  right: -12vmax;
-  width: 58vmax;
-  height: 58vmax;
-  background: var(--bd-form);
-  box-shadow: inset -2vmax -3vmax 6vmax var(--bd-beam-2);
+  bottom: -70vh;
+  left: -30vw;
+  width: 90vw;
+  height: 120vh;
+  background: radial-gradient(closest-side, transparent 80%, var(--bd-ribbon) 90%, transparent 99%);
 }
-/* a second form in the far corner, half out of the window */
+/* soft daylight from above the top-left */
 .backdrop > :nth-child(4) {
-  right: 8vw;
-  bottom: -34vmax;
-  width: 62vmax;
-  height: 62vmax;
-  background: var(--bd-form);
-  box-shadow: 0 -2vmax 8vmax var(--bd-pool);
+  top: -30vmax;
+  left: -10vmax;
+  width: 70vmax;
+  height: 50vmax;
+  background: radial-gradient(closest-side, var(--bd-glow), transparent);
 }
 .backdrop::after {
   content: '';
@@ -463,6 +475,9 @@
       will-change: transform;
     }
   }
+  .panel.panel-tile {
+    background: var(--tile-bg);
+  }
   :is(a, button).panel {
     transition-property: box-shadow, transform, background-color;
     transition-duration: 200ms;
@@ -559,9 +574,9 @@
 
   /* "YOUR IMAGES": a small capital line over a title. */
   .eyebrow {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.09em;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--color-faint);
   }
@@ -573,7 +588,7 @@
     position: relative;
     width: 76px;
     background: var(--rail-bg);
-    box-shadow: var(--panel-rim), var(--panel-shadow);
+    box-shadow: var(--panel-rim), var(--rail-shadow);
     transition: width 320ms var(--ease-drawer);
   }
   .rail[data-open='true'] {
@@ -626,10 +641,14 @@
     background: var(--color-primary);
     box-shadow: 0 6px 14px -8px rgb(0 0 0 / 0.6);
   }
+  .rail-card {
+    background: var(--card-bg);
+    box-shadow: var(--card-edge);
+  }
   /* a section's name: it folds away with the names, leaving its gap */
   .rail-section {
-    height: 30px;
-    padding: 12px 14px 0;
+    height: 36px;
+    padding: 18px 14px 0;
     overflow: hidden;
     white-space: nowrap;
   }
@@ -699,7 +718,7 @@
   }
   .rail {
     --lens-bg: var(--rail-on);
-    --lens-shadow: inset 0 0 0 1px var(--color-line);
+    --lens-shadow: none;
   }
 
   /* The + menu (AddMenu): it grows out of the button, so its corner is the button's. */
@@ -905,8 +924,8 @@
     font-weight: 500;
     white-space: nowrap;
     color: var(--color-ink);
-    background: var(--btn-bg);
-    box-shadow: var(--btn-edge);
+    background: var(--track-bg);
+    box-shadow: var(--track-edge);
   }
   .tag {
     display: inline-flex;
@@ -937,7 +956,7 @@
   }
   /* Page titles: large, set tight, as in the reference. */
   .display {
-    font-weight: 550;
+    font-weight: 600;
     letter-spacing: -0.045em;
   }
   .kbd {
@@ -947,17 +966,17 @@
     height: 1.375rem;
     padding: 0 0.375rem;
     border-radius: 0.4rem;
-    font-size: 11.5px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 500;
     color: var(--color-faint);
-    background: var(--btn-bg);
-    box-shadow: var(--btn-edge);
+    background: var(--track-bg);
+    box-shadow: var(--track-edge), inset 0 0 0 1px var(--color-line);
   }
 
   /* A segmented control's track and its chosen segment: a lighter pill of glass. */
   .track {
     background: var(--track-bg);
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+    box-shadow: var(--track-edge);
   }
   .selected {
     color: var(--selected-ink);
@@ -1300,4 +1319,47 @@
   main {
     padding: 0 !important;
   }
+}
+
+/* The hero's sculpture (HeroForm): it floats over its shadow, which tightens as it rises. */
+@keyframes form-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-9px) rotate(-1.5deg); }
+}
+@keyframes form-shadow {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  50% { transform: translateX(-50%) scale(0.86); opacity: 0.7; }
+}
+.hero-form-img {
+  filter: var(--hero-form-filter);
+  animation: form-float 7s ease-in-out infinite;
+}
+.hero-form-shadow {
+  position: absolute;
+  bottom: -9%;
+  left: 50%;
+  width: 70%;
+  height: 13%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--hero-shadow), transparent);
+  filter: blur(6px);
+  animation: form-shadow 7s ease-in-out infinite;
+}
+.hero-form[data-busy='true'] .hero-form-img,
+.hero-form[data-busy='true'] .hero-form-shadow {
+  animation-duration: 2.4s;
+}
+
+/* Changing theme (lib/theme.ts switchTheme): the new screen is revealed over a still picture of the
+   old one through a growing circle, so neither fades; the new one lies on top. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 0;
+}
+::view-transition-new(root) {
+  z-index: 1;
 }

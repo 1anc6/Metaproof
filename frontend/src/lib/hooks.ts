@@ -1,9 +1,57 @@
 import { useEffect, useState } from 'react'
-import { api, type JobSummary } from './api'
+import { api, type JobSummary, type ServiceStatus } from './api'
 import type { HistoryEntry } from './history'
 import { devFixture } from './devData'
 
 export type ServerState = 'checking' | 'waking' | 'online' | 'offline'
+
+/** One read of GET /api/status: when it answered and how long the answer took. */
+export type StatusSample = { at: number; ms: number }
+
+/**
+ * Live figures from GET /api/status, re-read every `refreshMs` while the tab is visible and at once
+ * when it comes back into view. Each read is timed, and the last `keep` timings are kept, for a
+ * chart of how quickly the server answers. `failed` is set when the last read got no answer, so
+ * the figures before it may be out of date.
+ */
+export function useServiceStatus(refreshMs: number, keep = 24) {
+  const [status, setStatus] = useState<ServiceStatus | null>(null)
+  const [failed, setFailed] = useState(false)
+  const [samples, setSamples] = useState<StatusSample[]>([])
+  useEffect(() => {
+    let cancelled = false
+    let busy = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const load = () => {
+      clearTimeout(timer)
+      if (busy || document.hidden) return // a hidden tab waits for visibilitychange
+      busy = true
+      const start = performance.now()
+      api
+        .status()
+        .then((s) => {
+          if (cancelled) return
+          const sample = { at: Date.now(), ms: performance.now() - start }
+          setStatus(s)
+          setFailed(false)
+          setSamples((list) => [...list, sample].slice(-keep))
+        })
+        .catch(() => !cancelled && setFailed(true))
+        .finally(() => {
+          busy = false
+          if (!cancelled) timer = setTimeout(load, refreshMs)
+        })
+    }
+    load()
+    document.addEventListener('visibilitychange', load)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', load)
+    }
+  }, [refreshMs, keep])
+  return { status, failed, samples }
+}
 
 /** The free Render instance sleeps when idle; tell the user instead of looking broken. */
 export function useServerStatus(): ServerState {

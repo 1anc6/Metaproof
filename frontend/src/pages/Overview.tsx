@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, type Job, type VerdictLabel } from '../lib/api'
 import { DEMO_SHA } from '../lib/checks'
@@ -22,7 +22,7 @@ import { useHistory, type HistoryEntry } from '../lib/history'
 import { setPref, usePrefs, type Period } from '../lib/prefs'
 import { tally, useHistorySummaries, type Summaries } from '../lib/summaries'
 import { VERDICTS } from '../lib/verdicts'
-import { HeroOrb } from '../components/HeroOrb'
+import { HeroForm } from '../components/HeroForm'
 import { OrbText } from '../components/ThinkingOrb'
 import { FileName, Switch, Thumb, VerdictBadge, VerdictDot } from '../components/ui'
 
@@ -77,10 +77,10 @@ export function Overview() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Header period={period} checked={entries.length} flagged={flagged} span={span} now={now} />
-      <div className="grid grid-cols-1 gap-4 @4xl:grid-cols-[minmax(0,11fr)_minmax(0,13fr)]">
+      <Header checked={entries.length} flagged={flagged} span={span} now={now} />
+      <div className="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
         <Hero flagged={flagged} known={t.known} span={span} waiting={waiting} />
-        <Latest done={done} data={data} span={span} waiting={waiting} example={example} now={now} />
+        <Latest done={done} data={data} period={period} span={span} waiting={waiting} example={example} now={now} counts={t.counts} known={t.known} />
       </div>
       <Figures checked={entries.length} counts={t.counts} known={t.known} span={span} waiting={waiting} />
       <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2 @5xl:grid-cols-3">
@@ -126,41 +126,50 @@ const greeting = (now: Date) => (now.getHours() < 12 ? 'Good morning' : now.getH
 
 /**
  * The reference's header: a small capital line, the title, a line of what is in the workspace,
- * and on the right the period, which scopes every panel below, and a pill for a new analysis.
+ * and on the right one white pill for a new analysis (on phones, the search in its place).
  */
-function Header({ period, checked, flagged, span, now }: { period: Period; checked: number; flagged: number; span: string; now: Date }) {
+function Header({ checked, flagged, span, now }: { checked: number; flagged: number; span: string; now: Date }) {
   return (
-    <header className="mb-2 flex flex-col gap-4 @4xl:flex-row @4xl:items-end @4xl:justify-between">
+    <header className="mb-3 flex flex-col gap-4 @4xl:flex-row @4xl:items-center @4xl:justify-between">
       <div className="min-w-0">
         <p className="eyebrow">Image authenticity</p>
-        <h1 className="display mt-2.5 text-[30px] leading-[1.05] @lg:text-[38px]">Every image, explained.</h1>
-        <p className="mt-2.5 text-[14px] text-muted">
+        <h1 className="display mt-3 text-[32px] leading-[1.04] @lg:text-[44px]">Every image, explained.</h1>
+        <p className="mt-3 text-[13.5px] text-muted">
           {greeting(now)}.{' '}
           {checked > 0
             ? `${checked} ${plural(checked, 'image')} checked and ${flagged} flagged ${span}.`
             : 'Check an image to see where it came from and whether it was changed.'}
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2.5">
-        <div role="group" aria-label="Period" className="track flex gap-0.5 rounded-full p-1">
-          {PERIODS.map((p) => (
-            <button
-              key={p.key}
-              type="button"
-              aria-pressed={period === p.key}
-              onClick={() => setPref('period', p.key)}
-              className={`h-8 rounded-full px-3.5 text-[13px] whitespace-nowrap transition pointer-coarse:h-10 ${period === p.key ? 'selected font-medium' : 'text-faint hover:text-ink'}`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <SearchPill className="min-w-0 flex-1 basis-full sm:basis-auto lg:hidden" />
-        <Link to="/new" className="btn-ghost btn-sm max-lg:hidden">
-          <Plus className="size-4" strokeWidth={2} /> New analysis
-        </Link>
-      </div>
+      <SearchPill className="min-w-0 lg:hidden" />
+      <Link to="/new" className="btn-ghost h-11 shrink-0 gap-2.5 px-5 text-[14px] max-lg:hidden">
+        <Plus className="size-[18px]" strokeWidth={1.8} /> New analysis
+      </Link>
     </header>
+  )
+}
+
+/**
+ * The period, which scopes every panel on the overview, as a small outlined pill in the corner of
+ * the latest card, where the reference marks its chart's week.
+ */
+function PeriodPicker({ period }: { period: Period }) {
+  return (
+    <div role="group" aria-label="Period" className="chip !h-auto shrink-0 !gap-0 !p-[3px]">
+      {PERIODS.map((p) => (
+        <button
+          key={p.key}
+          type="button"
+          aria-pressed={period === p.key}
+          onClick={() => setPref('period', p.key)}
+          className={`h-6 rounded-full px-2.5 text-[10px] font-medium tracking-[0.1em] whitespace-nowrap uppercase transition pointer-coarse:h-9 ${
+            period === p.key ? 'selected' : 'text-faint hover:text-ink'
+          }`}
+        >
+          {p.label}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -197,58 +206,41 @@ function SearchPill({ className = '' }: { className?: string }) {
   )
 }
 
-/** The width of an element, kept up to date. */
-function useWidth<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
-  const [width, setWidth] = useState(0)
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const watch = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
-    watch.observe(el)
-    return () => watch.disconnect()
-  }, [])
-  return [ref, width] as const
-}
-
 /**
- * The hero, where the reference stands its chrome sculpture: a large thinking orb in a disc of
- * glass with a bezel of liquid metal, at rest while nothing is loading. Below it, the way in as a
- * pill, and on an ink card the share of the period's verdicts that were flagged.
+ * The hero, where the reference stands its chrome sculpture: a soft form of satin silver floating
+ * over the glass. Below it, the way in as a white pill, and on an ink card the share of the
+ * period's verdicts that were flagged.
  */
 function Hero({ flagged, known, span, waiting }: { flagged: number; known: number; span: string; waiting: boolean }) {
-  const [box, width] = useWidth<HTMLElement>()
-  const size = Math.round(Math.max(160, Math.min(280, width * 0.56)))
   const share = known ? flagged / known : 0
   return (
-    <section ref={box} aria-labelledby="hero-title" className="panel relative flex min-h-[320px] flex-col overflow-hidden rounded-[22px] p-5 @lg:min-h-[380px]">
+    <section aria-labelledby="hero-title" className="panel relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] p-5 @lg:min-h-[400px] @lg:p-6">
       <h2 id="hero-title" className="sr-only">
         Analyze an image
       </h2>
-      <div className="flex flex-1 items-center justify-center pt-4 pb-10">{width > 0 && <HeroOrb state={waiting ? 'searching' : 'shaping'} size={size} />}</div>
+      <div className="flex flex-1 items-center justify-center pt-6 pb-14">
+        <HeroForm busy={waiting} className="w-[min(58%,300px)] min-w-[180px] translate-x-[-4%]" />
+      </div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <Link
           to="/new"
-          className="group flex h-12 items-center gap-4 rounded-full bg-[var(--btn-hover)] pr-1.5 pl-5 text-[14px] font-medium text-ink shadow-[var(--btn-edge),0_12px_26px_-16px_rgb(0_0_0/0.45)] transition-transform active:scale-[0.98]"
+          className="group flex h-12 items-center gap-5 rounded-full bg-[var(--btn-bg)] pr-1.5 pl-5 text-[13px] font-medium text-ink shadow-[var(--btn-edge)] transition-[transform,background-color] hover:bg-[var(--btn-hover)] active:scale-[0.98]"
         >
           Analyze an image
           <span className="grid size-9 place-items-center rounded-full bg-[var(--white-pill)] text-[var(--pill-ink)] transition-transform duration-300 ease-(--ease-out) group-hover:rotate-45">
             <ArrowUpRight className="size-4" strokeWidth={2} aria-hidden />
           </span>
         </Link>
-        <Link
-          to="/history?filter=flagged"
-          className="panel panel-ink group flex items-center gap-3 rounded-[18px] py-2.5 pr-3.5 pl-2.5"
-        >
-          <Ring share={share} size={52} figure={waiting ? '–' : `${Math.round(share * 100)}%`} />
+        <Link to="/history?filter=flagged" className="panel panel-ink group flex items-center gap-3.5 rounded-[18px] py-3 pr-4 pl-3">
+          <Ring share={share} size={54} width={3.5} figure={waiting ? '–' : `${Math.round(share * 100)}%`} />
           <span className="flex flex-col leading-tight">
-            <span className="text-fine text-muted">Flagged {span}</span>
-            <span className="mt-0.5 flex items-baseline gap-1.5">
-              <span className="num text-[24px] leading-none">{waiting ? '–' : flagged}</span>
+            <span className="text-[12.5px] text-muted">Flagged {span}</span>
+            <span className="mt-1 flex items-baseline gap-1.5">
+              <span className="num text-[26px] leading-none font-semibold">{waiting ? '–' : flagged}</span>
               <span className="text-fine text-faint">of {known}</span>
             </span>
           </span>
-          <ArrowUpRight className="ml-1 size-4 self-start text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.8} aria-hidden />
+          <ArrowUpRight className="ml-2 size-4 self-start text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.8} aria-hidden />
         </Link>
       </div>
     </section>
@@ -355,7 +347,7 @@ function FigureTile({
   to: string
 }) {
   return (
-    <Link to={to} className={`panel group flex min-h-[132px] flex-col rounded-[18px] px-[18px] py-4 ${ink ? 'panel-ink' : ''}`}>
+    <Link to={to} className={`panel group flex min-h-[136px] flex-col rounded-[20px] px-5 py-[18px] ${ink ? 'panel-ink' : 'panel-tile'}`}>
       <span className="flex items-start justify-between gap-3">
         <span className="text-[13px] text-muted">{label}</span>
         <Icon className="size-[18px] text-faint transition-colors group-hover:text-ink" strokeWidth={1.6} aria-hidden />
@@ -604,77 +596,134 @@ function shortWhen(iso: string, now: Date) {
 }
 
 /**
- * The latest verdict in large type, like the reference's temperature, with the file and when it
- * was analyzed under it; below, the last few verdicts as points on a line (higher is closer to
- * AI-generated) over a row naming each, the way the reference forecasts the next hours.
+ * The latest verdict, after the reference's workspace pulse: the period in the corner, the verdict
+ * in large type with the file it was for, then the last few verdicts as a line over a dotted grid
+ * (higher is closer to AI-generated), and along the foot three meters, authentic, flagged and
+ * inconclusive, each filled to its share of the period's verdicts.
  */
-function Latest({ done, data, span, waiting, example, now }: { done: HistoryEntry[]; data: Data; span: string; waiting: boolean; example: Job | null; now: Date }) {
+function Latest({
+  done,
+  data,
+  period,
+  span,
+  waiting,
+  example,
+  now,
+  counts,
+  known,
+}: {
+  done: HistoryEntry[]
+  data: Data
+  period: Period
+  span: string
+  waiting: boolean
+  example: Job | null
+  now: Date
+  counts: Record<VerdictLabel, number>
+  known: number
+}) {
   const latest = done[0]
-  if (!latest) {
-    const v = example?.verdict ? VERDICTS[example.verdict.label] : null
-    return (
-      <section aria-labelledby="latest-title" className="panel @container flex flex-col rounded-[22px] p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="latest-title" className="eyebrow">
-            {example ? 'Example report' : 'Latest analysis'}
-          </h2>
-          {example && <span className="chip !h-6 !text-[11px] uppercase tracking-[0.08em] text-faint">Sample</span>}
-        </div>
-        <div className="mt-5 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="display text-[40px] leading-none @lg:text-[52px]">
-              {waiting ? <span className="skeleton block h-10 w-48" /> : example ? (v?.short ?? 'Example') : `Nothing ${span}`}
-            </p>
-            <p className="mt-2.5 text-[13.5px] text-muted">
-              {example ? 'A sample image, analysed in advance' : waiting ? <OrbText state="searching">Loading verdicts…</OrbText> : 'Analyze an image to see its verdict here.'}
-            </p>
-          </div>
-          <Link to={example ? DEMO_REPORT_PATH : '/new'} className="btn-ghost btn-sm shrink-0 max-[420px]:hidden">
-            {example ? 'Open example' : 'Analyze'} <ArrowUpRight className="size-4" strokeWidth={1.8} />
-          </Link>
-        </div>
-        <div className="mt-auto flex h-[120px] items-center justify-center rounded-[16px] border-[1.5px] border-dashed border-[var(--zone-edge)] px-4 text-center text-[13px] text-faint">
-          Your verdicts will line up here, newest on the right.
-        </div>
-      </section>
-    )
-  }
-
-  const label = data[latest.jobId].label!
-  const trail = done.slice(0, 5).reverse()
+  const label = latest ? data[latest.jobId].label! : null
+  const sample = example?.verdict ? VERDICTS[example.verdict.label] : null
+  const to = latest ? `/analysis/${latest.jobId}` : example ? DEMO_REPORT_PATH : '/new'
   return (
-    <section aria-labelledby="latest-title" className="panel @container flex flex-col overflow-hidden rounded-[22px] p-5 sm:p-6">
-      <div className="flex items-center justify-between gap-3">
+    <section aria-labelledby="latest-title" className="panel @container flex flex-col overflow-hidden rounded-[26px] p-5 sm:p-6 @lg:p-7">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
         <h2 id="latest-title" className="eyebrow">
-          Latest analysis
+          {!latest && example ? 'Example report' : 'Latest analysis'}
         </h2>
-        <span className="chip !h-6 !text-[11px] uppercase tracking-[0.08em] text-faint">{span}</span>
+        <PeriodPicker period={period} />
       </div>
-      <div className="mt-5 flex items-start justify-between gap-3">
+      <div className="mt-6 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="display flex items-center gap-3 text-[40px] leading-none @lg:text-[52px]">
-            <VerdictDot label={label} className="size-3 @lg:size-3.5" />
-            {VERDICTS[label].short}
-          </p>
-          <p className="mt-2.5 flex min-w-0 items-center gap-1.5 text-[13.5px] text-muted">
-            <ImageIcon className="size-4 shrink-0" strokeWidth={1.6} aria-hidden />
-            <FileName name={latest.filename} />
-            <span aria-hidden>·</span>
-            <span className="shrink-0">{formatWhen(latest.uploadedAt)}</span>
-          </p>
+          {latest && label ? (
+            <>
+              <p className="display flex items-center gap-3 text-[40px] leading-[0.95] @lg:text-[56px]">
+                <VerdictDot label={label} className="size-3 @lg:size-3.5" />
+                {VERDICTS[label].short}
+              </p>
+              <p className="mt-3 flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted">
+                <ImageIcon className="size-4 shrink-0" strokeWidth={1.6} aria-hidden />
+                <FileName name={latest.filename} />
+                <span aria-hidden>·</span>
+                <span className="shrink-0">{formatWhen(latest.uploadedAt)}</span>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="display text-[40px] leading-[0.95] @lg:text-[56px]">
+                {waiting ? <span className="skeleton block h-10 w-48" /> : example ? (sample?.short ?? 'Example') : `Nothing ${span}`}
+              </p>
+              <p className="mt-3 text-[12.5px] text-muted">
+                {example ? 'A sample image, analysed in advance' : waiting ? <OrbText state="searching">Loading verdicts…</OrbText> : 'Analyze an image to see its verdict here.'}
+              </p>
+            </>
+          )}
         </div>
-        <Link to={`/analysis/${latest.jobId}`} className="btn-ghost btn-sm shrink-0 max-[420px]:hidden">
-          Open report <ArrowUpRight className="size-4" strokeWidth={1.8} />
+        {/* where the reference sets its "↗ 18.2%": the way into the report */}
+        <Link to={to} className="group flex shrink-0 flex-col items-end gap-1 pt-1 text-right max-[420px]:hidden">
+          <span className="flex items-center gap-1 text-[15px] font-semibold tracking-[-0.015em] text-ink">
+            <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={2} aria-hidden />
+            {latest ? 'Open report' : example ? 'Open example' : 'Analyze'}
+          </span>
+          <span className="text-[11.5px] text-faint">{latest ? 'every check, in full' : example ? 'a finished report' : 'an image'}</span>
         </Link>
       </div>
-      <Trail items={trail} data={data} now={now} />
+      {latest ? (
+        <Trail items={done.slice(0, 5).reverse()} data={data} now={now} />
+      ) : (
+        <div className="relative mt-7" style={{ height: TRAIL_H }}>
+          <Grid />
+          <p className="absolute inset-0 grid place-items-center px-4 text-center text-[13px] text-faint">Your verdicts will line up here, newest on the right.</p>
+        </div>
+      )}
+      <Meters counts={counts} known={known} waiting={waiting} />
     </section>
   )
 }
 
+/** Authentic, flagged and inconclusive along the foot of the latest card, as the reference's three
+ *  counts: a dot, a name and a figure over a thin bar filled to its share. */
+function Meters({ counts, known, waiting }: { counts: Record<VerdictLabel, number>; known: number; waiting: boolean }) {
+  const rows: [string, number][] = [
+    ['Authentic', counts.likely_authentic],
+    ['Flagged', counts.edited + counts.likely_ai_generated],
+    ['Inconclusive', counts.inconclusive],
+  ]
+  return (
+    <ul className="mt-auto grid grid-cols-3 gap-x-4 pt-7 @lg:gap-x-6">
+      {rows.map(([name, n]) => (
+        <li key={name} className="min-w-0">
+          <div className="flex items-center justify-between gap-2 @max-sm:flex-col @max-sm:items-start @max-sm:gap-1">
+            <span className="flex min-w-0 items-center gap-1.5 text-[11.5px] text-muted">
+              <span className="size-1.5 shrink-0 rounded-full bg-[var(--color-ink)]" aria-hidden />
+              <span className="truncate">{name}</span>
+            </span>
+            <span className="text-[15px] font-semibold tabular-nums">{waiting ? '–' : n}</span>
+          </div>
+          <div className="mt-2.5 h-[3px] overflow-hidden rounded-full bg-[var(--meter-bg)]" aria-hidden>
+            <div className="animate-grow h-full origin-left rounded-full bg-[var(--color-ink)]" style={{ width: `${known && !waiting ? (n / known) * 100 : 0}%` }} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 // Where each verdict sits on the line, from the top: AI-generated highest, authentic lowest.
-const LEVEL: Record<VerdictLabel, number> = { likely_ai_generated: 0.14, edited: 0.38, inconclusive: 0.62, likely_authentic: 0.86 }
-const TRAIL_H = 76
+const LEVEL: Record<VerdictLabel, number> = { likely_ai_generated: 0.12, edited: 0.37, inconclusive: 0.62, likely_authentic: 0.87 }
+const TRAIL_H = 120
+
+/** The chart's dotted rules, one at each verdict's level, as the reference rules its chart. */
+function Grid() {
+  return (
+    <svg className="absolute inset-0 size-full overflow-visible" aria-hidden>
+      {Object.values(LEVEL).map((l) => (
+        <line key={l} x1="0" x2="100%" y1={`${l * 100}%`} y2={`${l * 100}%`} stroke="var(--grid-dot)" strokeWidth={1.6} strokeDasharray="2 5" strokeLinecap="round" />
+      ))}
+    </svg>
+  )
+}
 
 /** A smooth path through the points that never overshoots them (monotone cubic). */
 function smoothPath(pts: { x: number; y: number }[]) {
@@ -709,43 +758,38 @@ function Trail({ items, data, now }: { items: HistoryEntry[]; data: Data; now: D
   // run the line on past the first and last points to the card's edges, as the reference does
   const path = smoothPath([{ x: -12, y: pts[0].y }, ...pts, { x: 112, y: pts[n - 1].y }])
   return (
-    <div className="mt-5">
-      <p className="label">
+    <div className="mt-6">
+      <p className="label text-[12px]">
         {n === 1 ? 'Your first verdict' : `Your last ${n} verdicts`}, higher is closer to AI-generated
       </p>
-      <div className="relative mt-2" style={{ height: TRAIL_H }} aria-hidden>
+      <div className="relative mt-3" style={{ height: TRAIL_H }} aria-hidden>
+        <Grid />
         <svg viewBox={`0 0 100 ${TRAIL_H}`} preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
           <path d={path} fill="none" stroke="var(--trail-line)" strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         {pts.map((p, i) => {
           const last = i === n - 1
-          const dot = VERDICTS[data[items[i].jobId].label!].dot
           return (
             <span
               key={items[i].jobId}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full ${last ? 'size-4 bg-white' : 'size-2.5'}`}
-              style={{
-                left: `${p.x}%`,
-                top: p.y,
-                background: last ? undefined : dot,
-                boxShadow: last ? `inset 0 0 0 4px ${dot}, 0 0 0 2px var(--knob-fill)` : '0 0 0 2px var(--knob-fill)',
-              }}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--knob-fill)] ${last ? 'size-[13px]' : 'size-[9px]'}`}
+              style={{ left: `${p.x}%`, top: p.y, boxShadow: `inset 0 0 0 ${last ? 2.5 : 2}px var(--trail-line)` }}
             />
           )
         })}
       </div>
       <ol className="mt-3 grid" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
         {items.map((e, i) => {
-          const { short, dot, icon: Icon } = VERDICTS[data[e.jobId].label!]
+          const verdict = data[e.jobId].label!
           return (
             <li key={e.jobId} className="min-w-0">
-              <Link to={`/analysis/${e.jobId}`} className="flex flex-col items-center gap-1 rounded-[14px] px-1 py-1.5 text-center transition-colors hover:bg-[var(--row-bg)]">
+              <Link to={`/analysis/${e.jobId}`} className="flex flex-col items-center gap-0.5 rounded-[12px] px-1 py-1 text-center transition-colors hover:bg-[var(--row-bg)]">
                 <span className="flex max-w-full items-center gap-1.5">
-                  <Icon className="size-4 shrink-0" style={{ color: dot }} strokeWidth={1.9} aria-hidden />
+                  <VerdictDot label={verdict} className="size-1.5" />
                   <span className="sr-only">{e.filename}: </span>
-                  <span className={`truncate text-[13px] font-medium @max-[40rem]:sr-only ${i === n - 1 ? 'text-ink' : 'text-muted'}`}>{short}</span>
+                  <span className={`truncate text-[12px] @max-[40rem]:sr-only ${i === n - 1 ? 'font-medium text-ink' : 'text-muted'}`}>{VERDICTS[verdict].short}</span>
                 </span>
-                <span className="text-meta whitespace-nowrap text-faint">{shortWhen(e.uploadedAt, now)}</span>
+                <span className="text-[11px] whitespace-nowrap text-faint">{shortWhen(e.uploadedAt, now)}</span>
               </Link>
             </li>
           )

@@ -13,6 +13,7 @@ const Report = lazy(() => import('./pages/Report').then((m) => ({ default: m.Rep
 const History = lazy(() => import('./pages/History').then((m) => ({ default: m.History })))
 const Method = lazy(() => import('./pages/Method').then((m) => ({ default: m.Method })))
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })))
+const Server = lazy(() => import('./pages/Server').then((m) => ({ default: m.Server })))
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="report/:sha" element={<Report />} />
         <Route path="history" element={<History />} />
         <Route path="method" element={<Method />} />
+        <Route path="server" element={<Server />} />
         <Route path="settings" element={<Settings />} />
         <Route
           path="*"

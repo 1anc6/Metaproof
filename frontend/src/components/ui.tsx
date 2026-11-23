@@ -1,7 +1,8 @@
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { ImageOff, Monitor, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { api, type JobStatus, type Signal, type VerdictLabel } from '../lib/api'
-import { setPref, usePrefs } from '../lib/prefs'
+import { usePrefs } from '../lib/prefs'
+import { switchTheme } from '../lib/theme'
 import { PENDING, SIGNALS, VERDICTS } from '../lib/verdicts'
 import { OrbText } from './ThinkingOrb'
 
@@ -358,7 +359,7 @@ export function ThemeSwitch({ labels = false, stretch = false, className = '' }:
           aria-checked={theme === value}
           aria-label={labels ? undefined : label}
           title={label}
-          onClick={() => setPref('theme', value)}
+          onClick={(e) => switchTheme(value, e.currentTarget)}
           className={`flex h-9 items-center justify-center gap-1.5 rounded-full text-[13.5px] transition ${
             stretch ? 'flex-1' : fill ? 'flex-1 px-3 sm:flex-none sm:px-4' : 'w-9'
           } ${theme === value ? 'selected font-medium' : 'text-faint hover:text-ink'}`}
@@ -376,7 +377,7 @@ export function ThemeToggle({ resolved, className = 'size-10' }: { resolved: 'li
   const next = resolved === 'dark' ? 'light' : 'dark'
   const Icon = resolved === 'dark' ? Sun : Moon
   return (
-    <button type="button" onClick={() => setPref('theme', next)} className={`icon-btn ${className}`} aria-label={`Switch to ${next} theme`}>
+    <button type="button" onClick={(e) => switchTheme(next, e.currentTarget)} className={`icon-btn ${className}`} aria-label={`Switch to ${next} theme`}>
       <Icon className="size-[17px]" strokeWidth={1.6} />
     </button>
   )

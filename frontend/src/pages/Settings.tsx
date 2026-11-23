@@ -1,6 +1,7 @@
-import { CircleAlert, CircleCheck, Download, OctagonAlert, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { api, type ServiceStatus } from '../lib/api'
+import { ChartColumn, CircleAlert, CircleCheck, Download, OctagonAlert, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import type { ServiceStatus } from '../lib/api'
+import { useServiceStatus } from '../lib/hooks'
 import type { ReactNode } from 'react'
 import { formatWhen } from '../lib/format'
 import { useHistory, type HistoryEntry } from '../lib/history'
@@ -72,14 +73,14 @@ export function Settings() {
             The API runs on a free instance that sleeps when idle, so the first upload after a quiet
             spell can take up to a minute.
           </p>
-          <a
-            href="https://github.com/1anc6/metaproof"
-            target="_blank"
-            rel="noreferrer"
-            className="btn-ghost btn-sm mt-4"
-          >
-            <GithubMark className="size-4" /> Source code
-          </a>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link to="/server" className="btn-ghost btn-sm">
+              <ChartColumn className="size-4" strokeWidth={1.7} /> Server usage
+            </Link>
+            <a href="https://github.com/1anc6/metaproof" target="_blank" rel="noreferrer" className="btn-ghost btn-sm">
+              <GithubMark className="size-4" /> Source code
+            </a>
+          </div>
         </Card>
 
         <Card title="Privacy and data">
@@ -110,37 +111,7 @@ const REFRESH_MS = 15_000
 /** Live figures from GET /api/status: storage against the plan's limit and the last day's work.
  *  Re-read every REFRESH_MS while the tab is visible, and at once when it comes back into view. */
 function ServiceFigures() {
-  const [status, setStatus] = useState<ServiceStatus | null>(null)
-  const [failed, setFailed] = useState(false)
-  useEffect(() => {
-    let cancelled = false
-    let busy = false
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const load = () => {
-      clearTimeout(timer)
-      if (busy || document.hidden) return // a hidden tab waits for visibilitychange
-      busy = true
-      api
-        .status()
-        .then((s) => {
-          if (cancelled) return
-          setStatus(s)
-          setFailed(false)
-        })
-        .catch(() => !cancelled && setFailed(true))
-        .finally(() => {
-          busy = false
-          if (!cancelled) timer = setTimeout(load, REFRESH_MS)
-        })
-    }
-    load()
-    document.addEventListener('visibilitychange', load)
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-      document.removeEventListener('visibilitychange', load)
-    }
-  }, [])
+  const { status, failed } = useServiceStatus(REFRESH_MS)
 
   if (failed && !status) return <p className="text-[14.5px] leading-relaxed text-muted">Storage figures are unavailable while the server is unreachable.</p>
   if (!status) return <div className="skeleton h-24 !rounded-[18px]" aria-label="Loading storage figures" />

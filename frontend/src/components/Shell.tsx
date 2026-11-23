@@ -1,4 +1,5 @@
 import {
+  ChartColumn,
   ChevronRight,
   History,
   House,
@@ -6,7 +7,9 @@ import {
   Keyboard,
   Laptop,
   Lightbulb,
+  Menu,
   Moon,
+  MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
@@ -24,9 +27,9 @@ import { useServerStatus, type ServerState } from '../lib/hooks'
 import { useLens } from '../lib/lens'
 import { useMetalSettings } from '../lib/metal'
 import { setPref, usePrefs } from '../lib/prefs'
-import { useThemeSync } from '../lib/theme'
+import { switchTheme, useThemeSync } from '../lib/theme'
 import { AddMenu } from './AddMenu'
-import { LiveBadge, MetalBezel } from './Metal'
+import { LiveBadge } from './Metal'
 import { RouteBoundary } from './RouteBoundary'
 import { SummariesProvider } from './SummariesProvider'
 import { ThinkingOrb } from './ThinkingOrb'
@@ -36,8 +39,9 @@ const NAV = [
   { to: '/', label: 'Overview', icon: House, end: true, section: 'Workspace' },
   { to: '/new', label: 'New analysis', icon: ImagePlus, hint: 'N', section: 'Workspace' },
   { to: '/history', label: 'History', icon: History, section: 'Workspace' },
-  { to: '/method', label: 'Method', icon: Lightbulb, section: 'Learn' },
-  { to: '/settings', label: 'Settings', icon: Settings, section: 'Learn' },
+  { to: '/server', label: 'Server', icon: ChartColumn, section: 'Manage', dock: false },
+  { to: '/method', label: 'Method', icon: Lightbulb, section: 'Manage' },
+  { to: '/settings', label: 'Settings', icon: Settings, section: 'Manage' },
 ]
 
 /** The current screen's place in `items`, or -1. An analysis belongs to the history it was opened from. */
@@ -253,17 +257,23 @@ function Rail({ open, onShortcuts }: { open: boolean; onShortcuts: () => void })
   const toggle = open ? 'Collapse sidebar' : 'Expand sidebar'
   return (
     <aside className="no-print sticky top-8 h-[calc(100dvh-64px)] self-start">
-      <div className="rail flex h-full flex-col overflow-hidden rounded-[22px] p-3" data-open={open}>
+      <div className="rail flex h-full flex-col overflow-hidden rounded-[26px] p-3.5" data-open={open}>
         <div className="flex h-11 items-center justify-between">
-          <Link to="/" aria-label="MetaProof" title={open ? undefined : 'MetaProof, overview'} className="flex items-center gap-2.5 rounded-full px-[13px] text-ink">
-            <Mark className="size-[26px] shrink-0" />
-            <span translate="no" className="rail-label text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap">
+          <Link to="/" aria-label="MetaProof" title={open ? undefined : 'MetaProof, overview'} className="flex items-center gap-2.5 rounded-full px-[10px] text-ink">
+            <Mark className="size-[28px] shrink-0" />
+            <span translate="no" className="rail-label text-[21px] font-bold tracking-[-0.045em] whitespace-nowrap">
               MetaProof
             </span>
           </Link>
           {open && (
-            <button type="button" onClick={() => setPref('railOpen', false)} aria-label={toggle} title={`${toggle} ([)`} className="grid size-9 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-[var(--color-hover)] hover:text-ink">
-              <Toggle className="size-[18px]" strokeWidth={1.6} aria-hidden />
+            <button
+              type="button"
+              onClick={() => setPref('railOpen', false)}
+              aria-label={toggle}
+              title={`${toggle} ([)`}
+              className="rail-card grid size-9 shrink-0 place-items-center rounded-full text-ink transition-transform active:scale-95"
+            >
+              <Menu className="size-[17px]" strokeWidth={1.7} aria-hidden />
             </button>
           )}
         </div>
@@ -272,32 +282,29 @@ function Rail({ open, onShortcuts }: { open: boolean; onShortcuts: () => void })
         <Link
           to="/history"
           title={open ? undefined : `History: ${kept} kept in this browser`}
-          className="row-raise mt-4 flex h-[52px] shrink-0 items-center gap-3 overflow-hidden rounded-[14px] px-2.5 whitespace-nowrap shadow-[var(--btn-edge)]"
+          className="rail-card mt-6 flex h-[58px] shrink-0 items-center gap-3 overflow-hidden rounded-[16px] px-[9px] whitespace-nowrap transition-transform active:scale-[0.98]"
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-[var(--btn-bg)] text-ink shadow-[var(--btn-edge)]">
-            <Laptop className="size-4" strokeWidth={1.7} aria-hidden />
+          <span className="grid size-[38px] shrink-0 place-items-center rounded-[11px] bg-[var(--track-bg)] text-ink shadow-[inset_0_0_0_1px_var(--color-line)]">
+            <Laptop className="size-[17px]" strokeWidth={1.6} aria-hidden />
           </span>
-          <span className="rail-label flex min-w-0 flex-1 flex-col leading-tight">
-            <span className="text-[13px] font-medium text-ink">This browser</span>
-            <span className="text-meta text-faint">
+          <span className="rail-label flex min-w-0 flex-1 flex-col gap-0.5 leading-tight">
+            <span className="text-[13px] font-semibold text-ink">This browser</span>
+            <span className="text-[11.5px] text-faint">
               {kept} {kept === 1 ? 'analysis' : 'analyses'} kept here
             </span>
           </span>
-          <ChevronRight className="rail-label size-4 shrink-0 text-faint" strokeWidth={1.8} aria-hidden />
+          <ChevronRight className="rail-label mr-1 size-4 shrink-0 text-muted" strokeWidth={1.8} aria-hidden />
         </Link>
 
-        <div className="relative mt-3 flex">
-          <MetalBezel inset={3} />
-          <Link to="/new" title="New analysis (N)" className="btn-primary relative h-11 w-full min-w-0 !justify-start gap-2.5 overflow-hidden !px-[17px] text-[14px]">
-            <Plus className="size-[18px] shrink-0" strokeWidth={2.2} aria-hidden />
-            <span className="rail-label flex-1 text-left">New analysis</span>
-            <kbd className="rail-label grid h-6 min-w-6 place-items-center rounded-md bg-[color-mix(in_srgb,var(--pill-ink)_14%,transparent)] px-1.5 text-[11.5px] font-semibold" aria-hidden>
-              N
-            </kbd>
-          </Link>
-        </div>
+        <Link to="/new" title="New analysis (N)" className="btn-primary relative mt-4 !h-11 w-full min-w-0 !justify-start gap-2.5 overflow-hidden !px-[15px] text-[14px]">
+          <Plus className="size-[19px] shrink-0" strokeWidth={2} aria-hidden />
+          <span className="rail-label flex-1 text-left">New analysis</span>
+          <kbd className="rail-label pr-1 font-sans text-[12px] font-medium opacity-60" aria-hidden>
+            N
+          </kbd>
+        </Link>
 
-        <nav ref={nav} aria-label="Main" className="relative mt-2 flex flex-col gap-0.5">
+        <nav ref={nav} aria-label="Main" className="relative mt-3 flex flex-col gap-1">
           <span ref={lens} className="lens rounded-[14px]" data-axis="y" aria-hidden>
             <span />
           </span>
@@ -313,17 +320,19 @@ function Rail({ open, onShortcuts }: { open: boolean; onShortcuts: () => void })
           ))}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-2 pt-4">
+        <div className="mt-auto flex flex-col gap-3 pt-4">
           <ServerCard open={open} />
           {open ? (
-            <button type="button" onClick={onShortcuts} className="rail-item">
-              <span className="rail-icon">
-                <Keyboard className="size-[18px]" strokeWidth={1.6} aria-hidden />
+            /* where the reference has its signed-in person: a disc, a name and a line under it */
+            <button type="button" onClick={onShortcuts} className="flex h-12 items-center gap-3 overflow-hidden rounded-[14px] px-1.5 text-left whitespace-nowrap transition-colors hover:bg-[var(--color-hover)]">
+              <span className="rail-card grid size-9 shrink-0 place-items-center rounded-full text-ink">
+                <Keyboard className="size-[17px]" strokeWidth={1.6} aria-hidden />
               </span>
-              <span className="rail-label flex-1 text-left">Shortcuts</span>
-              <kbd className="kbd rail-label" aria-hidden>
-                ?
-              </kbd>
+              <span className="rail-label flex min-w-0 flex-1 flex-col gap-0.5 leading-tight">
+                <span className="text-[13px] font-semibold text-ink">Shortcuts</span>
+                <span className="text-[11.5px] text-faint">Press ? any time</span>
+              </span>
+              <MoreHorizontal className="rail-label mr-1 size-[18px] shrink-0 text-muted" strokeWidth={1.8} aria-hidden />
             </button>
           ) : (
             <button type="button" onClick={() => setPref('railOpen', true)} aria-label={toggle} title={`${toggle} ([)`} className="rail-item">
@@ -350,7 +359,7 @@ function RailLink({ to, label, icon: Icon, end, hint, open, count }: (typeof NAV
       className={({ isActive }) => `rail-item ${isActive || inHistory ? 'is-on' : ''}`}
     >
       <span className="rail-icon">
-        <Icon className="size-[18px]" strokeWidth={1.6} aria-hidden />
+        <Icon className="size-[19px]" strokeWidth={1.5} aria-hidden />
       </span>
       <span className="rail-label min-w-0 flex-1">{label}</span>
       {hint && (
@@ -359,7 +368,7 @@ function RailLink({ to, label, icon: Icon, end, hint, open, count }: (typeof NAV
         </kbd>
       )}
       {!!count && (
-        <span className="rail-label text-meta text-faint tabular-nums" aria-hidden>
+        <span className="kbd rail-label tabular-nums" aria-hidden>
           {count}
         </span>
       )}
@@ -368,15 +377,16 @@ function RailLink({ to, label, icon: Icon, end, hint, open, count }: (typeof NAV
 }
 
 /** The server's state on a card at the foot of the sidebar, where the reference shows its credits:
- *  LIVE in metal once it answers, an orb while it is reached or wakes, a dot when it is down. */
+ *  LIVE in metal once it answers, an orb while it is reached or wakes, a dot when it is down. It
+ *  opens the server's usage. */
 function ServerCard({ open }: { open: boolean }) {
   const state = useServerStatus()
   const s = SERVER_LABEL[state]
   return (
-    <div
-      className={`flex h-[60px] shrink-0 items-center gap-3 overflow-hidden rounded-[16px] whitespace-nowrap ${open ? 'px-3 shadow-[var(--btn-edge)]' : 'justify-center'}`}
-      style={open ? { background: 'var(--row-bg)' } : undefined}
-      title={open ? undefined : s.text}
+    <Link
+      to="/server"
+      className={`flex h-[64px] shrink-0 items-center gap-3 overflow-hidden rounded-[18px] whitespace-nowrap transition-transform active:scale-[0.98] ${open ? 'rail-card px-3.5' : 'justify-center'}`}
+      title={open ? 'Server usage' : `${s.text}: server usage`}
     >
       {state === 'online' ? (
         <LiveBadge label={open ? null : s.text} className={open ? '' : '-mx-[10px]'} />
@@ -385,11 +395,12 @@ function ServerCard({ open }: { open: boolean }) {
           <ServerMark state={state} size="size-2.5" />
         </span>
       )}
-      <span className="rail-label flex min-w-0 flex-col leading-tight">
-        <span className="text-[13px] font-medium text-ink">{s.text}</span>
-        <span className="text-meta text-faint">Analysis server</span>
+      <span className="rail-label flex min-w-0 flex-1 flex-col gap-0.5 leading-tight">
+        <span className="text-[15px] font-semibold tracking-[-0.02em] text-ink">{s.text}</span>
+        <span className="text-[11.5px] text-faint">Analysis server</span>
       </span>
-    </div>
+      <ChevronRight className="rail-label size-4 shrink-0 text-muted" strokeWidth={1.8} aria-hidden />
+    </Link>
   )
 }
 
@@ -409,9 +420,9 @@ function DeskBar({ theme, onShortcuts }: { theme: 'light' | 'dark'; onShortcuts:
   const { pathname } = useLocation()
   const trail = crumbs(pathname)
   return (
-    <header className="no-print mb-7 flex h-[72px] items-center justify-between gap-4 border-b border-line">
+    <header className="no-print mb-9 flex h-[72px] items-center justify-between gap-4 border-b border-[var(--hairline)]">
       <nav aria-label="Breadcrumb" className="min-w-0">
-        <ol className="flex items-center gap-2 text-[13px] whitespace-nowrap">
+        <ol className="flex items-center gap-2.5 text-[12.5px] whitespace-nowrap">
           <li className="text-faint">
             <Link to="/" className="rounded hover:text-ink">
               MetaProof
@@ -441,7 +452,7 @@ function DeskBar({ theme, onShortcuts }: { theme: 'light' | 'dark'; onShortcuts:
                 aria-pressed={theme === t}
                 aria-label={`${t === 'light' ? 'Light' : 'Dark'} theme`}
                 title={`${t === 'light' ? 'Light' : 'Dark'} theme`}
-                onClick={() => setPref('theme', t)}
+                onClick={(e) => switchTheme(t, e.currentTarget)}
                 className={`grid size-8 place-items-center rounded-full transition ${theme === t ? 'selected' : 'text-faint hover:text-ink'}`}
               >
                 <Icon className="size-4" strokeWidth={1.7} aria-hidden />
@@ -452,6 +463,17 @@ function DeskBar({ theme, onShortcuts }: { theme: 'light' | 'dark'; onShortcuts:
         <button type="button" onClick={onShortcuts} className="btn-primary !size-10 !p-0" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
           <Keyboard className="size-[18px]" strokeWidth={1.7} aria-hidden />
         </button>
+        {/* where the reference has the person's picture in a white ring: the settings */}
+        <Link
+          to="/settings"
+          aria-label="Settings"
+          title="Settings"
+          className="grid size-11 place-items-center rounded-full bg-[var(--btn-bg)] shadow-[var(--btn-edge)] transition-transform active:scale-95"
+        >
+          <span className="grid size-[34px] place-items-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#6b6d6c,#1b1d1c_70%)] text-[#f4f5f2]">
+            <Settings className="size-4" strokeWidth={1.7} aria-hidden />
+          </span>
+        </Link>
       </div>
     </header>
   )
@@ -522,7 +544,8 @@ const releaseAfterTap = (e: React.MouseEvent<HTMLElement>) => {
  * polished + in its ring of metal, which opens into a menu for a new analysis.
  */
 function Dock() {
-  const tabs = NAV.filter((n) => n.to !== '/new')
+  // phones reach the server page from Settings, so the bar keeps four screens
+  const tabs = NAV.filter((n) => n.to !== '/new' && !('dock' in n && n.dock === false))
   const navigate = useNavigate()
   const active = current(tabs, useLocation().pathname)
   const bar = useRef<HTMLDivElement>(null)
