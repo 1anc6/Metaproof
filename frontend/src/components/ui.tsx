@@ -5,12 +5,12 @@ import { setPref, usePrefs } from '../lib/prefs'
 import { PENDING, SIGNALS, VERDICTS } from '../lib/verdicts'
 import { OrbText } from './ThinkingOrb'
 
-/** A viewfinder: four corner brackets around a lime point of focus. */
+/** A viewfinder: four corner brackets around a point of focus. */
 export function Mark({ className = 'size-6' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
       <path d="M4 8.5V4h4.5M15.5 4H20v4.5M20 15.5V20h-4.5M8.5 20H4v-4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="3.4" fill="var(--color-primary)" />
+      <circle cx="12" cy="12" r="3.4" fill="currentColor" />
     </svg>
   )
 }
@@ -270,13 +270,15 @@ export function Thumb({ sha, className = '', blur = false, eager = false }: { sh
   )
 }
 
-/** A screen's title, large and light, named like its nav item, with one line of context. */
-export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: ReactNode; action?: ReactNode }) {
+/** A screen's title, large and set tight, named like its nav item, under a small capital line and
+ *  over one line of context, as the reference heads its pages. */
+export function PageHeader({ title, eyebrow, subtitle, action }: { title: string; eyebrow?: string; subtitle?: ReactNode; action?: ReactNode }) {
   return (
-    <header className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+    <header className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        <h1 className="display text-[26px] leading-[1.1] sm:text-[34px]">{title}</h1>
-        {subtitle && <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">{subtitle}</p>}
+        {eyebrow && <p className="eyebrow mb-2.5">{eyebrow}</p>}
+        <h1 className="display text-[28px] leading-[1.05] sm:text-[38px]">{title}</h1>
+        {subtitle && <p className="mt-2.5 max-w-2xl text-[14px] leading-relaxed text-muted">{subtitle}</p>}
       </div>
       {/* On phones the bar's centre button already starts an analysis, so it would only repeat it. */}
       {action && <div className="no-print flex shrink-0 gap-2 max-sm:hidden">{action}</div>}
@@ -380,7 +382,7 @@ export function ThemeToggle({ resolved, className = 'size-10' }: { resolved: 'li
   )
 }
 
-/** The reference's toggle: a lime track with a white knob when on. Named by `label`. */
+/** A toggle: an ink track with a light knob when on. Named by `label`. */
 export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (next: boolean) => void; label: string }) {
   return (
     <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className="switch">

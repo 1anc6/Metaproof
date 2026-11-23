@@ -45,7 +45,7 @@ const RULES = [
 export function Method() {
   return (
     <div>
-      <PageHeader title="How it works" subtitle="Six independent checks, a verdict that shows its working, and never a claim of absolute truth." />
+      <PageHeader eyebrow="How MetaProof decides" title="How it works" subtitle="Six independent checks, a verdict that shows its working, and never a claim of absolute truth." />
 
       {/* On a phone the page runs to five screens, so the links stay at the top as frosted chrome. */}
       <nav

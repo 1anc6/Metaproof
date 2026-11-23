@@ -1,5 +1,18 @@
-import { ArrowRight, ArrowUpRight, ChevronRight, CircleCheck, Image as ImageIcon, Plus, Search, ShieldCheck, type LucideIcon } from 'lucide-react'
-import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
+import {
+  ArrowRight,
+  ArrowUpRight,
+  ChevronRight,
+  CircleCheck,
+  CircleHelp,
+  Image as ImageIcon,
+  Images as ImagesIcon,
+  Plus,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+  type LucideIcon,
+} from 'lucide-react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, type Job, type VerdictLabel } from '../lib/api'
 import { DEMO_SHA } from '../lib/checks'
@@ -9,13 +22,15 @@ import { useHistory, type HistoryEntry } from '../lib/history'
 import { setPref, usePrefs, type Period } from '../lib/prefs'
 import { tally, useHistorySummaries, type Summaries } from '../lib/summaries'
 import { VERDICTS } from '../lib/verdicts'
+import { HeroOrb } from '../components/HeroOrb'
 import { OrbText } from '../components/ThinkingOrb'
-import { FileName, Switch, Thumb, VerdictDot } from '../components/ui'
+import { FileName, Switch, Thumb, VerdictBadge, VerdictDot } from '../components/ui'
 
 type Data = Summaries['data']
 
 const isFlagged = (label: VerdictLabel | null | undefined) => label === 'edited' || label === 'likely_ai_generated'
 const plural = (n: number, one: string, many = `${one}s`) => (n === 1 ? one : many)
+const pctOf = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0)
 
 const PERIODS: { key: Period; label: string; span: string }[] = [
   { key: 'all', label: 'All time', span: 'so far' },
@@ -37,11 +52,11 @@ function periodStart(period: Period, now: Date): Date | null {
 }
 
 /**
- * The overview, after the smart-home reference: the period as large words across the top (it
- * scopes every card below), then two columns of glass. On the left, the images checked and the
- * verdicts on a dial, where the reference has its members and thermostat; on the right, the
- * latest verdict with the ones before it on a line, the last flagged and last authentic images,
- * and the analyses over time as bars, where it has the weather, the doors and the energy chart.
+ * The overview, after the Atelier dashboard: a header with the period, then rows of glass panels.
+ * First the hero, a large thinking orb where the reference stands its sculpture, beside the latest
+ * verdict and the ones before it on a line. Then four figures, one on ink; the verdicts on a ring,
+ * the images checked and the analyses over time; the analyses to pick up again; and the last
+ * flagged and authentic images beside a card on how verdicts are reached. The period scopes it all.
  */
 export function Overview() {
   const history = useHistory()
@@ -58,31 +73,33 @@ export function Overview() {
   const firstVisit = history.length === 0
   const example = useExample(firstVisit)
   const waiting = loading && entries.length > 0
+  const flagged = t.counts.edited + t.counts.likely_ai_generated
 
   return (
-    <div>
-      <h1 className="sr-only">Overview</h1>
-      <Header period={period} />
-      <div className="grid grid-cols-1 gap-4 @3xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <Images entries={entries} blur={blur} span={span} firstVisit={firstVisit} />
-          <VerdictDial counts={t.counts} known={t.known} span={span} waiting={waiting} className="flex-1" />
-        </div>
-        <div className="flex min-w-0 flex-col gap-4">
-          <Latest done={done} data={data} span={span} waiting={waiting} example={example} now={now} />
-          <div className="grid grid-cols-1 gap-4 @md:grid-cols-2">
-            <Spotlight
-              kind="flagged"
-              entry={done.find((e) => isFlagged(data[e.jobId].label))}
-              data={data}
-              blur={blur}
-              span={span}
-              example={example}
-            />
-            <Spotlight kind="authentic" entry={done.find((e) => data[e.jobId].label === 'likely_authentic')} data={data} blur={blur} span={span} />
-          </div>
-          <Activity entries={entries} data={data} period={period} now={now} className="flex-1" />
-        </div>
+    <div className="flex flex-col gap-4">
+      <Header period={period} checked={entries.length} flagged={flagged} span={span} now={now} />
+      <div className="grid grid-cols-1 gap-4 @4xl:grid-cols-[minmax(0,11fr)_minmax(0,13fr)]">
+        <Hero flagged={flagged} known={t.known} span={span} waiting={waiting} />
+        <Latest done={done} data={data} span={span} waiting={waiting} example={example} now={now} />
+      </div>
+      <Figures checked={entries.length} counts={t.counts} known={t.known} span={span} waiting={waiting} />
+      <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2 @5xl:grid-cols-3">
+        <VerdictDial counts={t.counts} known={t.known} span={span} waiting={waiting} />
+        <Images entries={entries} blur={blur} span={span} firstVisit={firstVisit} />
+        <Activity entries={entries} data={data} period={period} now={now} className="@2xl:col-span-2 @5xl:col-span-1" />
+      </div>
+      <Recent entries={entries} data={data} blur={blur} span={span} now={now} />
+      <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2 @5xl:grid-cols-3">
+        <Spotlight
+          kind="flagged"
+          entry={done.find((e) => isFlagged(data[e.jobId].label))}
+          data={data}
+          blur={blur}
+          span={span}
+          example={example}
+        />
+        <Spotlight kind="authentic" entry={done.find((e) => data[e.jobId].label === 'likely_authentic')} data={data} blur={blur} span={span} />
+        <MethodCard className="@2xl:col-span-2 @5xl:col-span-1" />
       </div>
     </div>
   )
@@ -105,38 +122,50 @@ function useExample(wanted: boolean) {
   return wanted ? job : null
 }
 
-/** The period as large words, the chosen one bright, like the reference's rooms; search beside it. */
-function Header({ period }: { period: Period }) {
+const greeting = (now: Date) => (now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening')
+
+/**
+ * The reference's header: a small capital line, the title, a line of what is in the workspace,
+ * and on the right the period, which scopes every panel below, and a pill for a new analysis.
+ */
+function Header({ period, checked, flagged, span, now }: { period: Period; checked: number; flagged: number; span: string; now: Date }) {
   return (
-    <header className="mb-5 flex flex-col gap-4 pointer-coarse:gap-2 @3xl:mb-6 @3xl:flex-row @3xl:items-center @3xl:justify-between">
-      <div role="group" aria-label="Period" className="-m-1 flex items-baseline gap-x-4 overflow-x-auto p-1 [scrollbar-width:none] @lg:gap-x-6 @5xl:gap-x-8">
-        {PERIODS.map((p) => (
-          <button
-            key={p.key}
-            type="button"
-            aria-pressed={period === p.key}
-            onClick={() => setPref('period', p.key)}
-            // On touch screens the words get a 44px-tall target; a mouse needs no more than the word.
-            className={`shrink-0 rounded-lg pointer-coarse:py-2 text-[22px] leading-tight font-medium tracking-[-0.02em] whitespace-nowrap transition-colors @lg:text-[26px] @5xl:text-[28px] ${
-              period === p.key ? 'text-ink' : 'text-[var(--tab-dim)] hover:text-muted'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
+    <header className="mb-2 flex flex-col gap-4 @4xl:flex-row @4xl:items-end @4xl:justify-between">
+      <div className="min-w-0">
+        <p className="eyebrow">Image authenticity</p>
+        <h1 className="display mt-2.5 text-[30px] leading-[1.05] @lg:text-[38px]">Every image, explained.</h1>
+        <p className="mt-2.5 text-[14px] text-muted">
+          {greeting(now)}.{' '}
+          {checked > 0
+            ? `${checked} ${plural(checked, 'image')} checked and ${flagged} flagged ${span}.`
+            : 'Check an image to see where it came from and whether it was changed.'}
+        </p>
       </div>
-      <div className="flex items-center gap-2.5">
-        <SearchPill className="min-w-0 flex-1 @3xl:w-[220px] @3xl:flex-none @5xl:w-[260px]" />
-        <Link to="/new" className="btn-primary max-lg:hidden">
-          <Plus className="size-4" strokeWidth={2.4} /> New analysis
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div role="group" aria-label="Period" className="track flex gap-0.5 rounded-full p-1">
+          {PERIODS.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              aria-pressed={period === p.key}
+              onClick={() => setPref('period', p.key)}
+              className={`h-8 rounded-full px-3.5 text-[13px] whitespace-nowrap transition pointer-coarse:h-10 ${period === p.key ? 'selected font-medium' : 'text-faint hover:text-ink'}`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <SearchPill className="min-w-0 flex-1 basis-full sm:basis-auto lg:hidden" />
+        <Link to="/new" className="btn-ghost btn-sm max-lg:hidden">
+          <Plus className="size-4" strokeWidth={2} /> New analysis
         </Link>
       </div>
     </header>
   )
 }
 
-/** Search by file name: Enter opens History with the words in its search box. Filenames stay in
- *  this browser, so they travel in the router's state and never in the address. */
+/** Phones and tablets have no top bar search: search by file name from the header instead. Enter
+ *  opens History with the words, which travel in the router's state and never in the address. */
 function SearchPill({ className = '' }: { className?: string }) {
   const navigate = useNavigate()
   const [q, setQ] = useState('')
@@ -152,7 +181,7 @@ function SearchPill({ className = '' }: { className?: string }) {
       <label className="panel flex h-11 items-center gap-2.5 rounded-full pr-2 pl-4">
         <Search className="size-4 shrink-0 text-faint" strokeWidth={1.8} aria-hidden />
         <input
-          id="global-search"
+          id="overview-search"
           name="q"
           type="search"
           aria-label="Search history"
@@ -163,21 +192,197 @@ function SearchPill({ className = '' }: { className?: string }) {
           placeholder="Search your history…"
           className="min-w-0 flex-1 self-stretch bg-transparent text-[14px] outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
         />
-        <kbd className="kbd max-sm:hidden" aria-hidden>
-          /
-        </kbd>
       </label>
     </form>
   )
 }
 
-/** The images checked in the period as a row of overlapping circles, like the reference's members,
- *  with + for a new analysis and the switch that blurs every preview. */
+/** The width of an element, kept up to date. */
+function useWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null)
+  const [width, setWidth] = useState(0)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const watch = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
+    watch.observe(el)
+    return () => watch.disconnect()
+  }, [])
+  return [ref, width] as const
+}
+
+/**
+ * The hero, where the reference stands its chrome sculpture: a large thinking orb in a disc of
+ * glass with a bezel of liquid metal, at rest while nothing is loading. Below it, the way in as a
+ * pill, and on an ink card the share of the period's verdicts that were flagged.
+ */
+function Hero({ flagged, known, span, waiting }: { flagged: number; known: number; span: string; waiting: boolean }) {
+  const [box, width] = useWidth<HTMLElement>()
+  const size = Math.round(Math.max(160, Math.min(280, width * 0.56)))
+  const share = known ? flagged / known : 0
+  return (
+    <section ref={box} aria-labelledby="hero-title" className="panel relative flex min-h-[320px] flex-col overflow-hidden rounded-[22px] p-5 @lg:min-h-[380px]">
+      <h2 id="hero-title" className="sr-only">
+        Analyze an image
+      </h2>
+      <div className="flex flex-1 items-center justify-center pt-4 pb-10">{width > 0 && <HeroOrb state={waiting ? 'searching' : 'shaping'} size={size} />}</div>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <Link
+          to="/new"
+          className="group flex h-12 items-center gap-4 rounded-full bg-[var(--btn-hover)] pr-1.5 pl-5 text-[14px] font-medium text-ink shadow-[var(--btn-edge),0_12px_26px_-16px_rgb(0_0_0/0.45)] transition-transform active:scale-[0.98]"
+        >
+          Analyze an image
+          <span className="grid size-9 place-items-center rounded-full bg-[var(--white-pill)] text-[var(--pill-ink)] transition-transform duration-300 ease-(--ease-out) group-hover:rotate-45">
+            <ArrowUpRight className="size-4" strokeWidth={2} aria-hidden />
+          </span>
+        </Link>
+        <Link
+          to="/history?filter=flagged"
+          className="panel panel-ink group flex items-center gap-3 rounded-[18px] py-2.5 pr-3.5 pl-2.5"
+        >
+          <Ring share={share} size={52} figure={waiting ? '–' : `${Math.round(share * 100)}%`} />
+          <span className="flex flex-col leading-tight">
+            <span className="text-fine text-muted">Flagged {span}</span>
+            <span className="mt-0.5 flex items-baseline gap-1.5">
+              <span className="num text-[24px] leading-none">{waiting ? '–' : flagged}</span>
+              <span className="text-fine text-faint">of {known}</span>
+            </span>
+          </span>
+          <ArrowUpRight className="ml-1 size-4 self-start text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.8} aria-hidden />
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+/** A thin ring with the share drawn from the top, clockwise, and a figure in its middle. */
+function Ring({ share, size, figure, color = 'var(--color-ink)', width = 4 }: { share: number; size: number; figure?: string; color?: string; width?: number }) {
+  const r = 50 - width * 1.5
+  return (
+    <span className="relative grid shrink-0 place-items-center" style={{ width: size, height: size }} aria-hidden>
+      <svg viewBox="0 0 100 100" className="absolute inset-0 size-full -rotate-90">
+        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--track-bg)" strokeWidth={width * 2} />
+        {share > 0 && (
+          <circle
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth={width * 2}
+            strokeLinecap="round"
+            pathLength={1}
+            strokeDasharray={`${share} 1`}
+            className="dial-arc animate-draw"
+            style={{ strokeDashoffset: 0 }}
+          />
+        )}
+      </svg>
+      {figure && <span className="relative text-[12px] font-semibold tabular-nums">{figure}</span>}
+    </span>
+  )
+}
+
+/**
+ * Four figures in a row, after the reference's: how many images were checked, how many were
+ * flagged (on ink), and how many came out authentic and inconclusive, each with its share.
+ */
+function Figures({
+  checked,
+  counts,
+  known,
+  span,
+  waiting,
+}: {
+  checked: number
+  counts: Record<VerdictLabel, number>
+  known: number
+  span: string
+  waiting: boolean
+}) {
+  const flagged = counts.edited + counts.likely_ai_generated
+  const show = (n: number) => (waiting ? '–' : String(n).padStart(2, '0'))
+  return (
+    <section aria-label="Figures" className="grid grid-cols-2 gap-3 @md:gap-4 @5xl:grid-cols-4">
+      <FigureTile icon={ImagesIcon} label="Images checked" value={show(checked)} caption={`${span === 'so far' ? 'in this browser' : span}`} to="/history" />
+      <FigureTile
+        ink
+        icon={ShieldAlert}
+        label="Flagged"
+        value={show(flagged)}
+        chip={known ? `${pctOf(flagged, known)}%` : undefined}
+        caption="edited or AI-generated"
+        bar={known ? flagged / known : 0}
+        to="/history?filter=flagged"
+      />
+      <FigureTile
+        icon={CircleCheck}
+        label="Authentic"
+        value={show(counts.likely_authentic)}
+        chip={known ? `${pctOf(counts.likely_authentic, known)}%` : undefined}
+        caption="backed by provenance"
+        to="/history?filter=likely_authentic"
+      />
+      <FigureTile
+        icon={CircleHelp}
+        label="Inconclusive"
+        value={show(counts.inconclusive)}
+        chip={known ? `${pctOf(counts.inconclusive, known)}%` : undefined}
+        caption="not enough evidence either way"
+        to="/history?filter=inconclusive"
+      />
+    </section>
+  )
+}
+
+function FigureTile({
+  icon: Icon,
+  label,
+  value,
+  chip,
+  caption,
+  bar,
+  ink = false,
+  to,
+}: {
+  icon: LucideIcon
+  label: string
+  value: string
+  chip?: string
+  caption: string
+  bar?: number
+  ink?: boolean
+  to: string
+}) {
+  return (
+    <Link to={to} className={`panel group flex min-h-[132px] flex-col rounded-[18px] px-[18px] py-4 ${ink ? 'panel-ink' : ''}`}>
+      <span className="flex items-start justify-between gap-3">
+        <span className="text-[13px] text-muted">{label}</span>
+        <Icon className="size-[18px] text-faint transition-colors group-hover:text-ink" strokeWidth={1.6} aria-hidden />
+      </span>
+      <span className="mt-auto flex items-center gap-2.5 pt-3">
+        <span className="num text-[38px] leading-none">{value}</span>
+        {chip && <span className="chip !h-6 !px-2 !text-[11.5px]">{chip}</span>}
+      </span>
+      <span className="mt-2.5 flex items-center justify-between gap-3">
+        <span className="text-fine text-faint">{caption}</span>
+        {bar !== undefined && (
+          <span className="h-1 w-12 shrink-0 overflow-hidden rounded-full bg-[var(--track-bg)]" aria-hidden>
+            <span className="block h-full rounded-full bg-[var(--color-ink)]" style={{ width: `${bar * 100}%` }} />
+          </span>
+        )}
+      </span>
+    </Link>
+  )
+}
+
+/** The images checked in the period as a grid of tiles, with + for a new analysis and the switch
+ *  that blurs every preview. */
 function Images({ entries, blur, span, firstVisit }: { entries: HistoryEntry[]; blur: boolean; span: string; firstVisit: boolean }) {
-  const shown = entries.slice(0, 4)
+  const shown = entries.slice(0, entries.length > 8 ? 7 : 8)
   const more = entries.length - shown.length
   return (
-    <section aria-labelledby="images-title" className="panel rounded-[28px] p-5 sm:p-6">
+    <section aria-labelledby="images-title" className="panel flex flex-col rounded-[22px] p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id="images-title" className="card-title">
@@ -191,45 +396,41 @@ function Images({ entries, blur, span, firstVisit }: { entries: HistoryEntry[]; 
                 : `Nothing checked ${span}`}
           </p>
         </div>
-        <Link to="/new" className="icon-btn size-10" aria-label="New analysis" title="New analysis (N)">
-          <Plus className="size-5" strokeWidth={1.7} />
+        <Link to="/new" className="icon-btn size-9" aria-label="New analysis" title="New analysis (N)">
+          <Plus className="size-[18px]" strokeWidth={1.7} />
         </Link>
       </div>
-      <div className="mt-5 flex items-center justify-between gap-4">
-        <ul className="flex min-w-0 items-center">
-          {shown.map((e, i) => (
-            <li key={e.jobId} className={i > 0 ? '-ml-2.5' : ''}>
-              <Link
-                to={`/analysis/${e.jobId}`}
-                aria-label={`Open ${e.filename}`}
-                title={e.filename}
-                className="block rounded-full shadow-[0_0_0_2px_rgb(255_255_255/0.55)] transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                <Thumb sha={e.sha256} blur={blur} className="size-11 rounded-full" />
-              </Link>
-            </li>
-          ))}
-          {more > 0 && (
-            <li className="-ml-2.5">
-              <Link
-                to="/history"
-                aria-label={`${more} more in History`}
-                className="grid size-11 place-items-center rounded-full bg-[var(--knob-fill)] text-[13px] font-semibold shadow-[0_0_0_2px_rgb(255_255_255/0.55)]"
-              >
-                +{more}
-              </Link>
-            </li>
-          )}
-          {shown.length === 0 &&
-            [0, 1, 2].map((i) => (
-              <li key={i} className={`size-11 rounded-full border-[1.5px] border-dashed border-[var(--zone-edge)] ${i > 0 ? 'ml-1.5' : ''}`} aria-hidden />
-            ))}
-        </ul>
-        <label className="flex shrink-0 items-center gap-2.5 text-[13px] text-muted">
-          Blur
-          <Switch checked={blur} onChange={(v) => setPref('blurPreviews', v)} label="Blur previews" />
-        </label>
-      </div>
+      <ul className="mt-4 grid flex-1 grid-cols-4 content-start gap-2">
+        {shown.map((e) => (
+          <li key={e.jobId}>
+            <Link
+              to={`/analysis/${e.jobId}`}
+              aria-label={`Open ${e.filename}`}
+              title={e.filename}
+              className="block overflow-hidden rounded-[12px] shadow-[var(--btn-edge)] transition-transform duration-200 hover:-translate-y-0.5"
+            >
+              <Thumb sha={e.sha256} blur={blur} className="aspect-square w-full" />
+            </Link>
+          </li>
+        ))}
+        {more > 0 && (
+          <li>
+            <Link
+              to="/history"
+              aria-label={`${more} more in History`}
+              className="grid aspect-square place-items-center rounded-[12px] bg-[var(--btn-bg)] text-[13px] font-semibold shadow-[var(--btn-edge)]"
+            >
+              +{more}
+            </Link>
+          </li>
+        )}
+        {shown.length === 0 &&
+          [0, 1, 2, 3].map((i) => <li key={i} className="aspect-square rounded-[12px] border-[1.5px] border-dashed border-[var(--zone-edge)]" aria-hidden />)}
+      </ul>
+      <label className="mt-4 flex items-center justify-between gap-2.5 border-t border-line pt-3.5 text-[13px] text-muted">
+        Blur previews on screen
+        <Switch checked={blur} onChange={(v) => setPref('blurPreviews', v)} label="Blur previews" />
+      </label>
     </section>
   )
 }
@@ -237,30 +438,18 @@ function Images({ entries, blur, span, firstVisit }: { entries: HistoryEntry[]; 
 const MODES: VerdictLabel[] = ['likely_ai_generated', 'edited', 'likely_authentic', 'inconclusive']
 
 /**
- * The verdicts on a dial, after the reference's thermostat: the share of the period's verdicts
- * that landed on one outcome, its arc in that outcome's colour, and a row of round buttons below
- * (the reference's modes) to choose which outcome the dial shows.
+ * The verdicts on a ring, after the reference's "credits by model": the share of the period's
+ * verdicts that landed on one outcome, its arc in that outcome's colour, beside a legend of the
+ * four outcomes that chooses which one the ring shows.
  */
-function VerdictDial({
-  counts,
-  known,
-  span,
-  waiting,
-  className = '',
-}: {
-  counts: Record<VerdictLabel, number>
-  known: number
-  span: string
-  waiting: boolean
-  className?: string
-}) {
+function VerdictDial({ counts, known, span, waiting }: { counts: Record<VerdictLabel, number>; known: number; span: string; waiting: boolean }) {
   const [mode, setMode] = useState<VerdictLabel>('likely_ai_generated')
   const v = VERDICTS[mode]
   const count = counts[mode]
   const share = known ? count / known : 0
   const pct = Math.round(share * 100)
   return (
-    <section aria-labelledby="dial-title" className={`panel flex flex-col rounded-[28px] p-5 sm:p-6 ${className}`}>
+    <section aria-labelledby="dial-title" className="panel flex flex-col rounded-[22px] p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id="dial-title" className="card-title">
@@ -270,103 +459,137 @@ function VerdictDial({
             {waiting ? <OrbText state="searching">Loading verdicts…</OrbText> : known ? `${known} ${plural(known, 'verdict')} ${span}` : `No verdicts ${span}`}
           </p>
         </div>
-        <Link to={`/history?filter=${mode}`} className="icon-btn size-10" aria-label={`Open ${v.short} in History`} title={`${v.short} in History`}>
-          <ArrowUpRight className="size-[18px]" strokeWidth={1.7} />
+        <Link to={`/history?filter=${mode}`} className="icon-btn size-9" aria-label={`Open ${v.short} in History`} title={`${v.short} in History`}>
+          <ArrowUpRight className="size-[17px]" strokeWidth={1.7} />
         </Link>
       </div>
 
-      <div className="flex flex-1 items-center justify-center py-6 @5xl:py-8">
-        <Dial
-          share={share}
-          color={v.dot}
-          figure={known && !waiting ? String(pct) : '–'}
-          name={v.short}
-          detail={known && !waiting ? `${count} of ${known}` : ''}
-          label={known ? `${pct}% ${v.short}: ${count} of ${known} ${plural(known, 'verdict')} ${span}` : `No verdicts ${span}`}
-        />
-      </div>
-
-      <p className="label mb-3">Show on the dial</p>
-      <div role="group" aria-label="Verdict on the dial" className="flex items-start justify-between gap-2">
-        {MODES.map((m) => {
-          const { short, icon: Icon } = VERDICTS[m]
-          const on = m === mode
-          return (
-            <button key={m} type="button" aria-pressed={on} onClick={() => setMode(m)} className="group flex min-w-0 flex-col items-center gap-2 rounded-[18px] outline-offset-4">
-              <span
-                className={`grid size-[52px] place-items-center rounded-full transition duration-200 group-active:scale-95 ${
-                  on ? 'bg-[var(--white-pill)] text-[var(--pill-ink)] shadow-[0_10px_22px_-12px_rgb(0_0_0/0.6)]' : 'bg-[var(--btn-bg)] text-ink shadow-[var(--btn-edge)] group-hover:bg-[var(--btn-hover)]'
-                }`}
+      <div className="mt-4 flex flex-1 items-center gap-5">
+        <div
+          className="relative aspect-square w-[42%] max-w-[150px] min-w-[112px] shrink-0"
+          role="img"
+          aria-label={known ? `${pct}% ${v.short}: ${count} of ${known} ${plural(known, 'verdict')} ${span}` : `No verdicts ${span}`}
+        >
+          <svg viewBox="0 0 100 100" className="absolute inset-0 size-full -rotate-90" aria-hidden>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--track-bg)" strokeWidth="16" />
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke={v.dot}
+              strokeWidth="16"
+              pathLength={1}
+              strokeDasharray={`${share} 1`}
+              className="dial-arc animate-draw"
+              style={{ strokeDashoffset: 0, opacity: share > 0 ? 1 : 0 }}
+            />
+          </svg>
+          <span className="absolute inset-0 grid place-items-center text-center" aria-hidden>
+            <span>
+              <span className="num block text-[28px] leading-none">{known && !waiting ? pct : '–'}</span>
+              <span className="mt-1 block text-meta text-faint">{known && !waiting ? `% ${v.short}` : v.short}</span>
+            </span>
+          </span>
+        </div>
+        <div role="group" aria-label="Verdict on the dial" className="flex min-w-0 flex-1 flex-col gap-1">
+          {MODES.map((m) => {
+            const on = m === mode
+            return (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setMode(m)}
+                className={`flex h-10 items-center gap-2.5 rounded-[12px] px-2.5 text-left text-[13px] transition-colors ${on ? 'raise text-ink' : 'text-muted hover:bg-[var(--color-hover)]'}`}
               >
-                <Icon className="size-[22px]" strokeWidth={1.7} aria-hidden />
-              </span>
-              <span className="flex flex-col items-center leading-tight">
-                <span className={`text-fine font-medium whitespace-nowrap ${on ? 'text-ink' : 'text-muted'}`}>{short}</span>
-                <span className="mt-0.5 text-meta text-faint tabular-nums">{waiting ? '–' : counts[m]}</span>
-              </span>
-            </button>
-          )
-        })}
+                <VerdictDot label={m} />
+                <span className="min-w-0 flex-1 truncate">{VERDICTS[m].short}</span>
+                <span className="tabular-nums">{waiting ? '–' : counts[m]}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
     </section>
   )
 }
 
-/** A ring with ticks, the share drawn as an arc from the top clockwise, and a knob where it ends. */
-function Dial({ share, color, figure, name, detail, label }: { share: number; color: string; figure: string; name: string; detail: string; label: string }) {
-  const C = 120
-  const R = 100
+/**
+ * "Pick up where you left off": the latest analyses of the period in a column of rows, each with
+ * its picture, name, verdict and when, as the reference lists its recent conversations.
+ */
+function Recent({ entries, data, blur, span, now }: { entries: HistoryEntry[]; data: Data; blur: boolean; span: string; now: Date }) {
+  const rows = entries.slice(0, 4)
   return (
-    <div className="relative aspect-square w-full max-w-[240px] @md:max-w-[300px] @5xl:max-w-[372px]" role="img" aria-label={label}>
-      <svg viewBox="0 0 240 240" className="size-full overflow-visible" aria-hidden>
-        <circle cx={C} cy={C} r={114} fill="rgb(255 255 255 / 0.035)" />
-        <circle cx={C} cy={C} r={R} fill="none" stroke="var(--track-bg)" strokeWidth={16} />
-        {Array.from({ length: 60 }, (_, i) => {
-          const a = ((i * 6 - 90) * Math.PI) / 180
-          const inner = i % 5 === 0 ? 72 : 75
-          return (
-            <line
-              key={i}
-              x1={C + inner * Math.cos(a)}
-              y1={C + inner * Math.sin(a)}
-              x2={C + 81 * Math.cos(a)}
-              y2={C + 81 * Math.sin(a)}
-              stroke="var(--dial-tick)"
-              strokeWidth={1.4}
-              strokeLinecap="round"
-            />
-          )
-        })}
-        <g transform={`rotate(-90 ${C} ${C})`}>
-          <circle
-            cx={C}
-            cy={C}
-            r={R}
-            fill="none"
-            stroke={color}
-            strokeWidth={8}
-            strokeLinecap="round"
-            pathLength={1}
-            strokeDasharray={`${share} 1`}
-            className="dial-arc animate-draw"
-            style={{ strokeDashoffset: 0, opacity: share > 0 ? 1 : 0 }}
-          />
-        </g>
-        <g className="dial-knob" style={{ transform: `rotate(${share * 360}deg)` }}>
-          <circle cx={C} cy={C - R} r={11} fill="var(--knob-fill)" stroke={color} strokeWidth={4} />
-        </g>
-      </svg>
-      <div className="absolute inset-0 grid place-items-center text-center" aria-hidden>
-        <span>
-          <span className="block text-[54px] leading-none font-normal tracking-[-0.045em]">
-            {figure}
-            {figure !== '–' && <span className="ml-0.5 align-top text-[24px] text-faint">%</span>}
-          </span>
-          <span className="mt-2 block text-[14px] text-muted">{name}</span>
-          {detail && <span className="mt-0.5 block text-fine text-faint tabular-nums">{detail}</span>}
-        </span>
+    <section aria-labelledby="recent-title" className="panel rounded-[22px] p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id="recent-title" className="card-title">
+            Pick up where you left off
+          </h2>
+          <p className="label mt-0.5">Your latest analyses, newest first.</p>
+        </div>
+        <Link to="/history" className="flex shrink-0 items-center gap-1.5 rounded-full py-1 text-[13px] text-muted hover:text-ink">
+          View all <ArrowUpRight className="size-4" strokeWidth={1.8} aria-hidden />
+        </Link>
       </div>
-    </div>
+      {rows.length > 0 ? (
+        <ul className="mt-4 flex flex-col gap-2">
+          {rows.map((e) => {
+            const s = data[e.jobId]
+            return (
+              <li key={e.jobId}>
+                <Link to={`/analysis/${e.jobId}`} className="row-glass row-raise group flex h-14 items-center gap-3 rounded-[14px] pr-3 pl-2">
+                  <Thumb sha={e.sha256} blur={blur} className="size-10 shrink-0 rounded-[10px]" />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <FileName name={e.filename} className="text-[13.5px] font-medium text-ink" />
+                    <span className="text-meta text-faint">{formatWhen(e.uploadedAt)}</span>
+                  </span>
+                  <span className="max-sm:hidden">
+                    <VerdictBadge label={s?.label ?? null} status={s?.status} />
+                  </span>
+                  <span className="w-16 shrink-0 text-right text-meta text-faint max-md:hidden">{shortWhen(e.uploadedAt, now)}</span>
+                  <ArrowUpRight className="size-4 shrink-0 text-faint transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ink" strokeWidth={1.8} aria-hidden />
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <div className="mt-4 flex h-[76px] items-center justify-center rounded-[14px] border-[1.5px] border-dashed border-[var(--zone-edge)] px-4 text-center text-[13px] text-faint">
+          Nothing analyzed {span}. Your analyses will line up here.
+        </div>
+      )}
+    </section>
+  )
+}
+
+/** How verdicts are reached, on ink, where the reference has its team card. */
+function MethodCard({ className = '' }: { className?: string }) {
+  return (
+    <Link to="/method" className={`panel panel-ink group flex min-h-[200px] flex-col rounded-[22px] p-5 ${className}`}>
+      <span className="flex items-start justify-between gap-3">
+        <span className="eyebrow">How it works</span>
+        <ArrowUpRight className="size-4 text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.8} aria-hidden />
+      </span>
+      <span className="display mt-3 text-[24px] leading-[1.1]">
+        Six checks.
+        <br />A verdict that shows its working.
+      </span>
+      <span className="mt-auto grid grid-cols-3 gap-3 border-t border-line pt-4">
+        {[
+          ['6', 'checks'],
+          ['4', 'verdicts'],
+          ['4', 'rules for weighing'],
+        ].map(([n, what]) => (
+          <span key={what} className="flex flex-col">
+            <span className="num text-[22px] leading-none">{n}</span>
+            <span className="mt-1 text-meta text-faint">{what}</span>
+          </span>
+        ))}
+      </span>
+    </Link>
   )
 }
 
@@ -390,24 +613,27 @@ function Latest({ done, data, span, waiting, example, now }: { done: HistoryEntr
   if (!latest) {
     const v = example?.verdict ? VERDICTS[example.verdict.label] : null
     return (
-      <section aria-labelledby="latest-title" className="panel @container flex flex-col rounded-[28px] p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-3">
+      <section aria-labelledby="latest-title" className="panel @container flex flex-col rounded-[22px] p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="latest-title" className="eyebrow">
+            {example ? 'Example report' : 'Latest analysis'}
+          </h2>
+          {example && <span className="chip !h-6 !text-[11px] uppercase tracking-[0.08em] text-faint">Sample</span>}
+        </div>
+        <div className="mt-5 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 id="latest-title" className="label">
-              {example ? 'Example report' : 'Latest analysis'}
-            </h2>
-            <p className="mt-1.5 text-[38px] leading-none font-normal tracking-[-0.035em] @lg:text-[48px]">
+            <p className="display text-[40px] leading-none @lg:text-[52px]">
               {waiting ? <span className="skeleton block h-10 w-48" /> : example ? (v?.short ?? 'Example') : `Nothing ${span}`}
             </p>
             <p className="mt-2.5 text-[13.5px] text-muted">
-              {example ? 'A sample image, analysed in advance' :waiting ? <OrbText state="searching">Loading verdicts…</OrbText> : 'Analyze an image to see its verdict here.'}
+              {example ? 'A sample image, analysed in advance' : waiting ? <OrbText state="searching">Loading verdicts…</OrbText> : 'Analyze an image to see its verdict here.'}
             </p>
           </div>
           <Link to={example ? DEMO_REPORT_PATH : '/new'} className="btn-ghost btn-sm shrink-0 max-[420px]:hidden">
             {example ? 'Open example' : 'Analyze'} <ArrowUpRight className="size-4" strokeWidth={1.8} />
           </Link>
         </div>
-        <div className="mt-6 flex h-[76px] items-center justify-center rounded-[18px] border-[1.5px] border-dashed border-[var(--zone-edge)] px-4 text-center text-[13px] text-faint">
+        <div className="mt-auto flex h-[120px] items-center justify-center rounded-[16px] border-[1.5px] border-dashed border-[var(--zone-edge)] px-4 text-center text-[13px] text-faint">
           Your verdicts will line up here, newest on the right.
         </div>
       </section>
@@ -417,13 +643,16 @@ function Latest({ done, data, span, waiting, example, now }: { done: HistoryEntr
   const label = data[latest.jobId].label!
   const trail = done.slice(0, 5).reverse()
   return (
-    <section aria-labelledby="latest-title" className="panel @container flex flex-col overflow-hidden rounded-[28px] p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-3">
+    <section aria-labelledby="latest-title" className="panel @container flex flex-col overflow-hidden rounded-[22px] p-5 sm:p-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="latest-title" className="eyebrow">
+          Latest analysis
+        </h2>
+        <span className="chip !h-6 !text-[11px] uppercase tracking-[0.08em] text-faint">{span}</span>
+      </div>
+      <div className="mt-5 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 id="latest-title" className="label">
-            Latest analysis
-          </h2>
-          <p className="mt-1.5 flex items-center gap-3 text-[38px] leading-none font-normal tracking-[-0.035em] @lg:text-[48px]">
+          <p className="display flex items-center gap-3 text-[40px] leading-none @lg:text-[52px]">
             <VerdictDot label={label} className="size-3 @lg:size-3.5" />
             {VERDICTS[label].short}
           </p>
@@ -589,7 +818,7 @@ function Spotlight({
     )
   }
   return (
-    <div className="panel relative flex min-h-[200px] overflow-hidden rounded-[28px] p-5">
+    <div className="panel relative flex min-h-[200px] overflow-hidden rounded-[22px] p-5">
       <span className="relative flex min-w-0 flex-1 flex-col pr-[46%]">
         <span className="text-fine text-muted">Nothing flagged {span}</span>
         <span className="mt-1.5 text-[22px] leading-[1.15] font-medium tracking-[-0.015em]">
@@ -632,7 +861,7 @@ function SpotCard({
   picture: ReactNode
 }) {
   return (
-    <Link to={to} aria-label={name} className="panel group relative flex min-h-[200px] overflow-hidden rounded-[28px] p-5">
+    <Link to={to} aria-label={name} className="panel group relative flex min-h-[200px] overflow-hidden rounded-[22px] p-5">
       {/* The spaces between the pieces don't show in the column, but keep the words apart when the
           card is read as text ("None so far Last authentic", not "farLastauthentic"). */}
       <span className="relative flex min-w-0 flex-1 flex-col pr-[46%]">
@@ -732,8 +961,8 @@ function axis(max: number) {
 }
 
 /**
- * The analyses over the period as bars, after the reference's energy chart: muted glass columns
- * with the one in focus in lime and its count in a bubble above it. The current day, week or month
+ * The analyses over the period as bars on ink, after the reference's weekly usage chart: columns of
+ * frosted glass with the one in focus lit and its count in a bubble above it. The current day, week or month
  * is in focus until another is pointed at, tapped or reached with the arrow keys. A table carries
  * the same numbers for screen readers.
  */
@@ -755,7 +984,7 @@ function Activity({ entries, data, period, now, className = '' }: { entries: His
   }
 
   return (
-    <section aria-labelledby="activity-title" className={`panel @container flex flex-col rounded-[28px] p-5 sm:p-6 ${className}`}>
+    <section aria-labelledby="activity-title" className={`panel panel-ink @container flex flex-col rounded-[22px] p-5 sm:p-6 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <h2 id="activity-title" className="card-title">
@@ -806,7 +1035,7 @@ function Activity({ entries, data, period, now, className = '' }: { entries: His
                 >
                   {!b.future && (
                     <span
-                      className={`animate-lift block w-full max-w-[34px] origin-bottom rounded-[10px] transition-[height,background-color] duration-500 ease-(--ease-out) ${on ? 'bg-primary' : 'bg-[var(--bar-bg)]'}`}
+                      className={`animate-lift block w-full max-w-[34px] origin-bottom rounded-[10px] transition-[height,background-color] duration-500 ease-(--ease-out) ${on ? 'activity-on' : 'activity-bar'}`}
                       style={{ height: `max(${h}%, 4px)`, animationDelay: `${i * 40}ms` }}
                     />
                   )}

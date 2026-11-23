@@ -12,8 +12,8 @@ const SCALE = 1.6
  * shadows and focus outline. `rootRef` reaches the wrapper, for moving button and ring together.
  *
  * `bezel` stands the ring that many px out from the button, round a sliver of the glass behind it:
- * the metal's chrome reads against dark, and on MetaProof's lime and white buttons a ring at their
- * own edge reads as a grey outline. A negative margin keeps the button's place in the layout.
+ * the metal's chrome reads against the glass, and on a light button a ring at its own edge reads
+ * as a grey outline. A negative margin keeps the button's place in the layout.
  */
 export function MetalRing({
   variant = 'button',
@@ -58,13 +58,32 @@ export function MetalRing({
       style={bezel ? { margin: -bezel } : undefined}
     >
       {bezel ? (
-        <span className="flex flex-1 rounded-full" style={{ padding: bezel }}>
+        <span className="flex min-w-0 flex-1 rounded-full" style={{ padding: bezel }}>
           {children}
         </span>
       ) : (
         children
       )}
     </MetalFx>
+  )
+}
+
+/**
+ * A ring of liquid metal behind a button or picture, `inset` px out from its edge, rather than
+ * wrapped round it. metal-fx paints a whole sheet of metal and leaves the thing it wraps to cover
+ * the middle; it also hides that thing until its renderer is ready (and, under `npm run dev`, for
+ * good on metal mounted after other metal). So the sheet goes behind as a sibling: place this
+ * first in a positioned parent and the content after it, positioned too, so the content covers
+ * the sheet and the metal shows only as a ring round it, and the content shows even when the
+ * metal can't.
+ */
+export function MetalBezel({ variant = 'button', inset = 0 }: { variant?: 'button' | 'circle'; inset?: number }) {
+  return (
+    <span aria-hidden className="pointer-events-none absolute flex" style={{ inset: -inset }}>
+      <MetalRing variant={variant} className="flex flex-1">
+        <span className="block flex-1 rounded-full" />
+      </MetalRing>
+    </span>
   )
 }
 

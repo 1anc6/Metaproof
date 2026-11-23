@@ -16,7 +16,7 @@ export interface Prefs {
 }
 
 const KEY = 'metaproof.prefs.v1'
-const DEFAULTS: Prefs = { blurPreviews: false, period: 'all', railOpen: false, theme: 'system' }
+const DEFAULTS: Prefs = { blurPreviews: false, period: 'all', railOpen: true, theme: 'system' }
 const listeners = new Set<() => void>()
 let cache: Prefs | null = null
 

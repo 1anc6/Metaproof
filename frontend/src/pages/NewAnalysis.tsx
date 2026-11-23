@@ -42,7 +42,7 @@ export function NewAnalysis() {
 
   return (
     <div>
-      <PageHeader title="New analysis" subtitle="Choose an image to check where it came from and whether it was edited or generated." />
+      <PageHeader eyebrow="Check an image" title="New analysis" subtitle="Choose an image to check where it came from and whether it was edited or generated." />
 
       <ServerNotice state={server} />
 

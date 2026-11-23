@@ -58,6 +58,7 @@ export function History() {
   return (
     <div>
       <PageHeader
+        eyebrow="Your analyses"
         title="History"
         subtitle="Every image you analyzed on this device. The list lives in your browser, not on the server."
         action={

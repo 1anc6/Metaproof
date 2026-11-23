@@ -16,7 +16,7 @@ test('follows the system theme until one is picked, then remembers it', async ({
   const switcher = page.getByRole('radiogroup', { name: 'Colour theme' }).first()
   await switcher.getByRole('radio', { name: 'Light' }).click()
   expect(await theme(page)).toBe('light')
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f2eef1')
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#efefed')
 
   // Set before first paint on reload, even though the system is still dark.
   await page.reload()
