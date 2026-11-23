@@ -83,7 +83,7 @@ export function Overview() {
           above it, within bounds. */}
       <div className="grid grid-cols-1 gap-4 [--top-h:clamp(340px,calc(100dvh-300px),480px)] @4xl/main:h-(--top-h) @4xl/main:grid-cols-2">
         <Hero flagged={flagged} known={t.known} span={span} waiting={waiting} />
-        <Latest done={done} data={data} period={period} span={span} waiting={waiting} example={example} now={now} counts={t.counts} known={t.known} />
+        <Latest history={history} done={done} data={data} period={period} span={span} waiting={waiting} example={example} now={now} counts={t.counts} known={t.known} />
       </div>
       <Figures checked={entries.length} counts={t.counts} known={t.known} span={span} waiting={waiting} />
       <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-2 @5xl:grid-cols-3">
@@ -136,7 +136,7 @@ function Header({ checked, flagged, span, now }: { checked: number; flagged: num
     <header className="mb-3 flex flex-col gap-4 @4xl:flex-row @4xl:items-center @4xl:justify-between">
       <div className="min-w-0">
         <p className="eyebrow">Image authenticity</p>
-        <h1 className="display mt-3 text-[32px] leading-[1.04] @lg:text-[44px]">Every image, explained.</h1>
+        <h1 className="display mt-3 text-[length:clamp(26px,8.4cqi,32px)] leading-[1.04] @lg:text-[44px]">Every image, explained.</h1>
         <p className="mt-3 text-[13.5px] text-muted">
           {greeting(now)}.{' '}
           {checked > 0
@@ -217,12 +217,12 @@ function SearchPill({ className = '' }: { className?: string }) {
 function Hero({ flagged, known, span, waiting }: { flagged: number; known: number; span: string; waiting: boolean }) {
   const share = known ? flagged / known : 0
   return (
-    <section aria-labelledby="hero-title" className="panel @container/hero relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] p-5 @lg:min-h-[400px] @lg:p-6 @4xl/main:min-h-0">
+    <section aria-labelledby="hero-title" className="panel @container/hero relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] p-5 @lg:min-h-[400px] @lg:p-6 @4xl/main:min-h-0 max-lg:h-(--hero-h) max-lg:min-h-0 max-lg:[--hero-h:clamp(300px,calc(100svh-365px),440px)]">
       <h2 id="hero-title" className="sr-only">
         Analyze an image
       </h2>
-      <div className="flex flex-1 items-center justify-center pt-6 pb-14 @4xl/main:min-h-0 @4xl/main:pt-0 @4xl/main:pb-5">
-        <HeroForm busy={waiting} className="w-[min(58%,300px)] min-w-[180px] translate-x-[-4%] @4xl/main:w-[min(58%,300px,calc((var(--top-h)-170px)*1.17))] @4xl/main:min-w-0" />
+      <div className="flex flex-1 items-center justify-center pt-6 pb-14 @4xl/main:min-h-0 @4xl/main:pt-0 @4xl/main:pb-5 max-lg:min-h-0 max-lg:pt-1 max-lg:pb-5">
+        <HeroForm busy={waiting} className="w-[min(58%,300px)] min-w-[180px] translate-x-[-4%] @4xl/main:w-[min(58%,300px,calc((var(--top-h)-170px)*1.17))] @4xl/main:min-w-0 max-lg:w-[min(58%,300px,calc((var(--hero-h)-200px)*1.17))] max-lg:min-w-0" />
       </div>
       {/* the hero's own width decides: the way in at the left and the flagged card at the right,
           as the reference's pill and credits card, or one above the other where they don't fit */}
@@ -602,11 +602,12 @@ function shortWhen(iso: string, now: Date) {
 
 /**
  * The latest verdict, after the reference's workspace pulse: the period in the corner, the verdict
- * in large type with the file it was for, then the last few verdicts as a line over a dotted grid
- * (higher is closer to AI-generated), and along the foot three meters, authentic, flagged and
- * inconclusive, each filled to its share of the period's verdicts.
+ * in large type with the file it was for, then the last seven days' analyses as a line over a
+ * dotted grid, and along the foot three meters, authentic, flagged and inconclusive, each filled to
+ * its share of the period's verdicts.
  */
 function Latest({
+  history,
   done,
   data,
   period,
@@ -617,6 +618,7 @@ function Latest({
   counts,
   known,
 }: {
+  history: HistoryEntry[]
   done: HistoryEntry[]
   data: Data
   period: Period
@@ -674,12 +676,12 @@ function Latest({
           <span className="text-[11.5px] text-faint">{latest ? 'every check, in full' : example ? 'a finished report' : 'an image'}</span>
         </Link>
       </div>
-      {latest ? (
-        <Trail items={done.slice(0, 5).reverse()} data={data} now={now} />
+      {history.length > 0 ? (
+        <Pulse history={history} data={data} now={now} />
       ) : (
         <div className="relative mt-7 h-[120px] @4xl/main:mt-5 @4xl/main:h-auto @4xl/main:min-h-12 @4xl/main:flex-1">
           <Grid />
-          <p className="absolute inset-0 grid place-items-center px-4 text-center text-[13px] text-faint">Your verdicts will line up here, newest on the right.</p>
+          <p className="absolute inset-0 grid place-items-center px-4 text-center text-[13px] text-faint">Your analyses will line up here, day by day.</p>
         </div>
       )}
       <Meters counts={counts} known={known} waiting={waiting} />
@@ -715,16 +717,15 @@ function Meters({ counts, known, waiting }: { counts: Record<VerdictLabel, numbe
   )
 }
 
-// Where each verdict sits on the line, from the top: AI-generated highest, authentic lowest.
-const LEVEL: Record<VerdictLabel, number> = { likely_ai_generated: 0.12, edited: 0.37, inconclusive: 0.62, likely_authentic: 0.87 }
-const TRAIL_H = 120
+/** The chart's dotted rules, as the reference rules its chart: the top one for the busiest day, the
+ *  bottom one for none. */
+const RULES = [12, 37, 62, 87]
 
-/** The chart's dotted rules, one at each verdict's level, as the reference rules its chart. */
 function Grid() {
   return (
     <svg className="absolute inset-0 size-full overflow-visible" aria-hidden>
-      {Object.values(LEVEL).map((l) => (
-        <line key={l} x1="0" x2="100%" y1={`${l * 100}%`} y2={`${l * 100}%`} stroke="var(--grid-dot)" strokeWidth={1.6} strokeDasharray="2 5" strokeLinecap="round" />
+      {RULES.map((at) => (
+        <line key={at} x1="0" x2="100%" y1={`${at}%`} y2={`${at}%`} stroke="var(--grid-dot)" strokeWidth={1.6} strokeDasharray="2 5" strokeLinecap="round" />
       ))}
     </svg>
   )
@@ -757,48 +758,79 @@ function smoothPath(pts: { x: number; y: number }[]) {
   return d
 }
 
-function Trail({ items, data, now }: { items: HistoryEntry[]; data: Data; now: Date }) {
-  const n = items.length
-  const pts = items.map((e, i) => ({ x: ((i + 0.5) / n) * 100, y: LEVEL[data[e.jobId].label!] * TRAIL_H }))
-  // run the line on past the first and last points to the card's edges, as the reference does
-  const path = smoothPath([{ x: -12, y: pts[0].y }, ...pts, { x: 112, y: pts[n - 1].y }])
+/** The last seven days, oldest first: each day's analyses, and how many of them were flagged. */
+function lastWeek(history: HistoryEntry[], data: Data, now: Date) {
+  const today = midnight(now)
+  return Array.from({ length: 7 }, (_, i) => {
+    const start = new Date(today)
+    start.setDate(today.getDate() - (6 - i))
+    const end = new Date(start)
+    end.setDate(start.getDate() + 1)
+    const that = history.filter((e) => {
+      const at = new Date(e.uploadedAt)
+      return at >= start && at < end
+    })
+    return {
+      short: start.toLocaleDateString(undefined, { weekday: 'short' }),
+      long: i === 6 ? 'Today' : start.toLocaleDateString(undefined, { weekday: 'long' }),
+      count: that.length,
+      flagged: that.filter((e) => isFlagged(data[e.jobId]?.label)).length,
+    }
+  })
+}
+
+/**
+ * The last seven days as a line, after the reference's workspace pulse: a point on each day at its
+ * number of analyses over the dotted rules, today's the largest and on the right, and a fainter
+ * line for the flagged ones when there are any. The days' names run beneath; for screen readers
+ * each day's figures. The line runs from the first day to the last and stays inside the card.
+ */
+function Pulse({ history, data, now }: { history: HistoryEntry[]; data: Data; now: Date }) {
+  const days = lastWeek(history, data, now)
+  const busiest = Math.max(1, ...days.map((d) => d.count))
+  const x = (i: number) => ((i + 0.5) / days.length) * 100
+  const y = (n: number) => RULES[3] - (n / busiest) * (RULES[3] - RULES[0])
+  const line = smoothPath(days.map((d, i) => ({ x: x(i), y: y(d.count) })))
+  const flagged = days.some((d) => d.flagged) ? smoothPath(days.map((d, i) => ({ x: x(i), y: y(d.flagged) }))) : null
+  const total = days.reduce((sum, d) => sum + d.count, 0)
   return (
     <div className="mt-6 @4xl/main:mt-4 @4xl/main:flex @4xl/main:min-h-0 @4xl/main:flex-1 @4xl/main:flex-col">
-      <p className="label text-[12px]">
-        {n === 1 ? 'Your first verdict' : `Your last ${n} verdicts`}, higher is closer to AI-generated
+      <p className="label flex items-center justify-between gap-3 text-[12px]">
+        <span>
+          {total} {plural(total, 'analysis', 'analyses')} in the last 7 days
+        </span>
+        {flagged && (
+          <span className="flex shrink-0 items-center gap-1.5" aria-hidden>
+            <span className="h-0.5 w-3 rounded-full bg-[var(--trail-ghost)]" /> Flagged
+          </span>
+        )}
       </p>
-      <div className="relative mt-3 h-[120px] @4xl/main:h-auto @4xl/main:min-h-12 @4xl/main:flex-1" aria-hidden>
+      <div className="relative mt-3 h-[110px] @4xl/main:h-auto @4xl/main:min-h-12 @4xl/main:flex-1" aria-hidden>
         <Grid />
-        <svg viewBox={`0 0 100 ${TRAIL_H}`} preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
-          <path d={path} fill="none" stroke="var(--trail-line)" strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
+          {flagged && <path d={flagged} fill="none" stroke="var(--trail-ghost)" strokeWidth={1.5} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />}
+          <path d={line} fill="none" stroke="var(--trail-line)" strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        {pts.map((p, i) => {
-          const last = i === n - 1
+        {days.map((d, i) => {
+          const today = i === days.length - 1
           return (
             <span
-              key={items[i].jobId}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--knob-fill)] ${last ? 'size-[13px]' : 'size-[9px]'}`}
-              style={{ left: `${p.x}%`, top: `${(p.y / TRAIL_H) * 100}%`, boxShadow: `inset 0 0 0 ${last ? 2.5 : 2}px var(--trail-line)` }}
+              key={d.long}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--knob-fill)] ${today ? 'size-[13px]' : 'size-[9px]'}`}
+              style={{ left: `${x(i)}%`, top: `${y(d.count)}%`, boxShadow: `inset 0 0 0 ${today ? 2.5 : 2}px var(--trail-line)` }}
             />
           )
         })}
       </div>
-      <ol className="mt-3 grid" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
-        {items.map((e, i) => {
-          const verdict = data[e.jobId].label!
-          return (
-            <li key={e.jobId} className="min-w-0">
-              <Link to={`/analysis/${e.jobId}`} className="flex flex-col items-center gap-0.5 rounded-[12px] px-1 py-1 text-center transition-colors hover:bg-[var(--row-bg)]">
-                <span className="flex max-w-full items-center gap-1.5">
-                  <VerdictDot label={verdict} className="size-1.5" />
-                  <span className="sr-only">{e.filename}: </span>
-                  <span className={`truncate text-[12px] @max-[40rem]:sr-only ${i === n - 1 ? 'font-medium text-ink' : 'text-muted'}`}>{VERDICTS[verdict].short}</span>
-                </span>
-                <span className="text-[11px] whitespace-nowrap text-faint">{shortWhen(e.uploadedAt, now)}</span>
-              </Link>
-            </li>
-          )
-        })}
+      <ol className="mt-2.5 grid grid-cols-7 text-center text-[11px]">
+        {days.map((d, i) => (
+          <li key={d.long} className={i === days.length - 1 ? 'font-medium text-ink' : 'text-faint'}>
+            <span aria-hidden>{d.short}</span>
+            <span className="sr-only">
+              {d.long}: {d.count} {plural(d.count, 'analysis', 'analyses')}, {d.flagged} flagged
+            </span>
+          </li>
+        ))}
       </ol>
     </div>
   )

@@ -150,6 +150,24 @@ test('desktop: the navigation sits in the sidebar, and nothing floats over the p
   }
 })
 
+test('phones: the hero card shows whole above the tab bar on landing', async ({ page }) => {
+  await seedHistory(page)
+  for (const [width, height] of [
+    [360, 660],
+    [368, 701],
+    [390, 750],
+    [412, 780],
+  ]) {
+    await page.setViewportSize({ width, height })
+    await page.goto('/')
+    const card = page.getByRole('region', { name: 'Analyze an image' })
+    const hero = (await card.boundingBox())!
+    const bar = (await page.locator('.dock-bar').boundingBox())!
+    expect(hero.y + hero.height, `${width}x${height}`).toBeLessThanOrEqual(bar.y - 8)
+    await expect(card.getByRole('link', { name: /Flagged/ })).toBeInViewport({ ratio: 1 })
+  }
+})
+
 test('phones: the overview opens with the period, search, the way in and the latest verdict above the fold', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')

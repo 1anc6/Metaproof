@@ -49,7 +49,7 @@ test('the latest verdict leads, and opens its report', async ({ page }) => {
   await page.goto('/')
   const latest = page.getByRole('region', { name: 'Latest analysis' })
   await expect(latest.getByText('Inconclusive', { exact: true }).first()).toBeVisible()
-  await expect(latest.getByText('Your first verdict, higher is closer to AI-generated')).toBeVisible()
+  await expect(latest.getByText('1 analysis in the last 7 days')).toBeVisible()
   await latest.getByRole('link', { name: 'Open report' }).click()
   await expect(page).toHaveURL(new RegExp(`/analysis/${JOB_ID}$`))
 })
