@@ -377,7 +377,17 @@ export function ThemeToggle({ resolved, className = 'size-10' }: { resolved: 'li
   const next = resolved === 'dark' ? 'light' : 'dark'
   const Icon = resolved === 'dark' ? Sun : Moon
   return (
-    <button type="button" onClick={(e) => switchTheme(next, e.currentTarget)} className={`icon-btn ${className}`} aria-label={`Switch to ${next} theme`}>
+    <button
+      type="button"
+      onClick={(e) => {
+        switchTheme(next, e.currentTarget)
+        // after a tap, let go of focus so its ring doesn't linger round the button (some Android
+        // browsers keep it); a keyboard press has `detail` 0 and keeps it
+        if (e.detail > 0) e.currentTarget.blur()
+      }}
+      className={`icon-btn ${className}`}
+      aria-label={`Switch to ${next} theme`}
+    >
       <Icon className="size-[17px]" strokeWidth={1.6} />
     </button>
   )

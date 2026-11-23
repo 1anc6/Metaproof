@@ -268,7 +268,7 @@ export function AddMenu({ bar, children }: { bar: RefObject<HTMLElement | null>;
         ref={button}
         type="button"
         aria-label="New analysis"
-        title={stage === 'open' ? 'Close' : 'New analysis (N)'}
+        title={stage === 'open' ? 'Close' : 'New analysis'}
         aria-expanded={stage === 'open'}
         aria-controls="add-menu"
         onClick={() => {

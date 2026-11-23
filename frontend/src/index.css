@@ -655,45 +655,33 @@
     background: var(--card-bg);
     box-shadow: var(--card-edge);
   }
-  /* a section's name: it folds away with the names, leaving a short rule as the break */
+  /* a section's name: it folds away with the names, leaving an even gap between the two groups,
+     as in the reference's folded rail */
   .rail-section {
-    position: relative;
-    height: 36px;
-    padding: 18px 14px 0;
+    height: 34px;
+    padding: 14px 14px 0;
     overflow: hidden;
     white-space: nowrap;
     transition: height 320ms var(--ease-drawer);
   }
-  .rail-section::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 18px;
-    height: 1px;
-    margin-left: -9px;
-    background: var(--color-line);
-    opacity: 1;
-    transition: opacity 200ms ease 120ms;
+  .rail-section:first-of-type {
+    height: 20px;
+    padding-top: 0;
   }
   .rail[data-open='false'] .rail-section {
-    height: 21px;
+    height: 10px;
   }
-  .rail[data-open='true'] .rail-section::after {
-    opacity: 0;
-    transition: opacity 100ms ease;
+  .rail[data-open='false'] .rail-section:first-of-type {
+    height: 0;
+  }
+  /* folded, an item is the icon's disc centred in the rail */
+  .rail[data-open='false'] .rail-item {
+    padding: 0 10px;
   }
   /* on a short window (a laptop with its browser's bars) everything still fits without scrolling */
-  @media (max-height: 760px) {
+  @media (max-height: 640px) {
     .rail .rail-item {
       height: 38px;
-    }
-    .rail-section {
-      height: 30px;
-      padding-top: 12px;
-    }
-    .rail[data-open='false'] .rail-section {
-      height: 15px;
     }
   }
 
@@ -1145,6 +1133,15 @@
     -webkit-backdrop-filter: var(--glass-blur);
     backdrop-filter: var(--glass-blur);
     box-shadow: var(--dock-edge);
+  }
+  /* Under the bar, the page softens and fades as it nears the bottom of the screen, so what
+     scrolls under the bar reads as passing behind it rather than colliding with it. */
+  .dock-fade {
+    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--color-canvas) 55%, transparent));
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 60%);
+    mask-image: linear-gradient(to bottom, transparent, #000 60%);
   }
   /* A tab: its icon, dark on the white pill once the lens has landed under it. */
   .tab {

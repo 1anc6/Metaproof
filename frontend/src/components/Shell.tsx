@@ -4,22 +4,16 @@ import {
   History,
   House,
   ImagePlus,
-  Keyboard,
-  Laptop,
   Lightbulb,
   Menu,
   Moon,
-  MoreHorizontal,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plus,
   Search,
   Settings,
   Sun,
   X,
 } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Toaster } from 'sonner'
 import type { OrbState } from 'thinking-orbs'
 import { useHistory } from '../lib/history'
@@ -37,7 +31,7 @@ import { Logo, Mark, ThemeToggle } from './ui'
 
 const NAV = [
   { to: '/', label: 'Overview', icon: House, end: true, section: 'Workspace' },
-  { to: '/new', label: 'New analysis', icon: ImagePlus, hint: 'N', section: 'Workspace' },
+  { to: '/new', label: 'New analysis', icon: ImagePlus, section: 'Workspace' },
   { to: '/history', label: 'History', icon: History, section: 'Workspace' },
   { to: '/server', label: 'Server', icon: ChartColumn, section: 'Manage', dock: false },
   { to: '/method', label: 'Method', icon: Lightbulb, section: 'Manage' },
@@ -79,9 +73,22 @@ export function Shell() {
   const theme = useThemeSync()
   const isDesktop = useDesktop()
   const { railOpen } = usePrefs()
+  // on a desktop the page scrolls inside the window, on phones the window itself
+  const scroller = useRef<HTMLDivElement>(null)
   useEffect(() => {
     window.scrollTo(0, 0)
+    scroller.current?.scrollTo(0, 0)
   }, [pathname])
+  // the scrollbar sits in the window's right margin, so the page keeps its width and ends where
+  // the top bar does (the bar's width varies with the system and the zoom)
+  useLayoutEffect(() => {
+    const el = scroller.current
+    if (!el || !isDesktop) return
+    const measure = () => el.parentElement?.style.setProperty('--gutter', `${el.offsetWidth - el.clientWidth}px`)
+    const watch = new ResizeObserver(measure)
+    watch.observe(el)
+    return () => watch.disconnect()
+  }, [isDesktop])
 
   const [shortcuts, setShortcuts] = useState(false)
 
@@ -115,12 +122,14 @@ export function Shell() {
 
   return (
     <SummariesProvider>
-      <div className="min-h-dvh lg:p-4 print:p-0">
+      <div className="min-h-dvh lg:h-dvh lg:min-h-0 lg:p-4 print:h-auto print:p-0">
         <Room className="backdrop" />
         <a href="#main" className="btn-primary no-print fixed top-3 left-3 z-[60] -translate-y-20 focus-visible:translate-y-0">
           Skip to content
         </a>
-        <div className="relative lg:grid lg:min-h-[calc(100dvh-32px)] lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-7 lg:rounded-[40px] lg:p-4 print:block print:p-0">
+        {/* On a desktop the window fits the screen, all four corners in view: the sidebar and the
+            top bar hold still and the page scrolls inside the window, under the top bar's rule. */}
+        <div className="relative lg:grid lg:h-full lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-7 lg:rounded-[40px] lg:p-4 print:block print:h-auto print:p-0">
           <div className="frame-glass" aria-hidden>
             <div className="frame-clip">
               <Room className="backdrop frame-room" />
@@ -128,18 +137,23 @@ export function Shell() {
             </div>
           </div>
           {/* One navigation at a time, so its server check and its links exist once. */}
-          {isDesktop && <Rail open={railOpen} onShortcuts={() => setShortcuts((open) => !open)} />}
-          <div className="min-w-0 lg:pr-4">
-            {isDesktop ? <DeskBar theme={theme} onShortcuts={() => setShortcuts((open) => !open)} /> : <TopBar theme={theme} />}
-            <main
-              id="main"
-              tabIndex={-1}
-              className="@container mx-auto w-full max-w-[1280px] px-4 pt-2 pb-[calc(112px+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-0 lg:pt-0 lg:pb-6"
+          {isDesktop && <Rail open={railOpen} />}
+          <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-col print:block">
+            {isDesktop ? <DeskBar theme={theme} /> : <TopBar theme={theme} />}
+            <div
+              ref={scroller}
+              className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pt-8 lg:pr-[max(0px,calc(16px-var(--gutter,0px)))] lg:[scrollbar-color:var(--color-line-strong)_transparent] lg:[scrollbar-gutter:stable] lg:[scrollbar-width:thin] print:overflow-visible print:p-0"
             >
-              <RouteBoundary pathname={pathname}>
-                <Outlet />
-              </RouteBoundary>
-            </main>
+              <main
+                id="main"
+                tabIndex={-1}
+                className="@container mx-auto w-full max-w-[1280px] px-4 pt-2 pb-[calc(112px+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-0 lg:pt-0 lg:pb-4"
+              >
+                <RouteBoundary pathname={pathname}>
+                  <Outlet />
+                </RouteBoundary>
+              </main>
+            </div>
           </div>
         </div>
         {!isDesktop && <Dock />}
@@ -242,70 +256,43 @@ export function ServerBadge({ compact = false, chip = false }: { compact?: boole
 }
 
 /**
- * The sidebar, after the reference's: the name at the top, a card for this browser's history, the
- * one action as an ink pill in a ring of liquid metal, the screens in two sections under a lens of
- * glass, and at the foot the server's state on a card of its own, LIVE in metal once it answers.
- * Folded, only the icons show; their names stay in the page for screen readers.
+ * The sidebar, after the reference's: the name at the top with the one control that folds and
+ * unfolds it, the screens in two sections under a lens of glass, and at the foot the server's
+ * state on a card of its own, LIVE in metal once it answers. Folded, only the icons show, the
+ * control under the name; their names stay in the page for screen readers.
  */
-function Rail({ open, onShortcuts }: { open: boolean; onShortcuts: () => void }) {
+function Rail({ open }: { open: boolean }) {
   const nav = useRef<HTMLElement>(null)
   const lens = useRef<HTMLSpanElement>(null)
   const { pathname } = useLocation()
   useLens(nav, lens, current(NAV, pathname), 'y')
   const kept = useHistory().length
-  const Toggle = open ? PanelLeftClose : PanelLeftOpen
   const toggle = open ? 'Collapse sidebar' : 'Expand sidebar'
   return (
-    <aside className="no-print sticky top-8 h-[calc(100dvh-64px)] self-start">
+    <aside className="no-print h-full min-h-0">
       <div className="rail flex h-full flex-col overflow-hidden rounded-[26px] p-3.5" data-open={open}>
-        <div className="flex h-11 items-center justify-between">
-          <Link to="/" aria-label="MetaProof" title={open ? undefined : 'MetaProof, overview'} className="flex items-center gap-2.5 rounded-full px-[10px] text-ink">
+        {/* the fold control stays at the top: beside the name when open, under it when folded */}
+        <div className={`flex shrink-0 ${open ? 'h-11 items-center justify-between' : 'flex-col items-start gap-3'}`}>
+          <Link to="/" aria-label="MetaProof" title={open ? undefined : 'MetaProof, overview'} className="flex h-11 items-center gap-2.5 rounded-full px-[10px] text-ink">
             <Mark className="size-[28px] shrink-0" />
             <span translate="no" className="rail-label text-[21px] font-bold tracking-[-0.045em] whitespace-nowrap">
               MetaProof
             </span>
           </Link>
-          {open && (
-            <button
-              type="button"
-              onClick={() => setPref('railOpen', false)}
-              aria-label={toggle}
-              title={`${toggle} ([)`}
-              className="rail-card grid size-9 shrink-0 place-items-center rounded-full text-ink transition-transform active:scale-95"
-            >
-              <Menu className="size-[17px]" strokeWidth={1.7} aria-hidden />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setPref('railOpen', !open)}
+            aria-label={toggle}
+            title={toggle}
+            aria-expanded={open}
+            className={`rail-card grid size-9 shrink-0 place-items-center rounded-full text-ink transition-transform active:scale-95 ${open ? '' : 'ml-1.5'}`}
+          >
+            <Menu className="size-[17px]" strokeWidth={1.7} aria-hidden />
+          </button>
         </div>
 
-        {/* where the reference keeps its workspace: this browser, which holds the history */}
-        <Link
-          to="/history"
-          title={open ? undefined : `History: ${kept} kept in this browser`}
-          className="rail-card mt-6 flex h-[58px] shrink-0 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:h-12 items-center gap-3 overflow-hidden rounded-[16px] px-[9px] whitespace-nowrap transition-transform active:scale-[0.98]"
-        >
-          <span className="grid size-[38px] shrink-0 place-items-center rounded-[11px] bg-[var(--track-bg)] text-ink shadow-[inset_0_0_0_1px_var(--color-line)]">
-            <Laptop className="size-[17px]" strokeWidth={1.6} aria-hidden />
-          </span>
-          <span className="rail-label flex min-w-0 flex-1 flex-col gap-0.5 leading-tight">
-            <span className="text-[13px] font-semibold text-ink">This browser</span>
-            <span className="text-[11.5px] text-faint">
-              {kept} {kept === 1 ? 'analysis' : 'analyses'} kept here
-            </span>
-          </span>
-          <ChevronRight className="rail-label mr-1 size-4 shrink-0 text-muted" strokeWidth={1.8} aria-hidden />
-        </Link>
-
-        <Link to="/new" title="New analysis (N)" className="btn-primary relative mt-4 !h-11 w-full min-w-0 shrink-0 [@media(max-height:760px)]:mt-3 !justify-start gap-2.5 overflow-hidden !px-[15px] text-[14px]">
-          <Plus className="size-[19px] shrink-0" strokeWidth={2} aria-hidden />
-          <span className="rail-label flex-1 text-left">New analysis</span>
-          <kbd className="rail-label pr-1 font-sans text-[12px] font-medium opacity-60" aria-hidden>
-            N
-          </kbd>
-        </Link>
-
-        {/* on a short window the screens scroll, so the server card and the toggle stay in reach */}
-        <div className="-mx-1 mt-3 min-h-0 flex-1 overflow-y-auto px-1 [scrollbar-width:none]">
+        {/* on a short window the screens scroll, so the server card stays in reach */}
+        <div className="-mx-1 mt-5 min-h-0 flex-1 overflow-y-auto px-1 [scrollbar-width:none]">
           <nav ref={nav} aria-label="Main" className="relative flex flex-col gap-1">
             <span ref={lens} className="lens rounded-[14px]" data-axis="y" aria-hidden>
               <span />
@@ -323,34 +310,15 @@ function Rail({ open, onShortcuts }: { open: boolean; onShortcuts: () => void })
           </nav>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3 pt-3 [@media(max-height:760px)]:gap-2">
+        <div className="flex shrink-0 flex-col pt-3">
           <ServerCard open={open} />
-          {open ? (
-            /* where the reference has its signed-in person: a disc, a name and a line under it */
-            <button type="button" onClick={onShortcuts} className="flex h-12 items-center gap-3 overflow-hidden rounded-[14px] px-1.5 text-left whitespace-nowrap transition-colors hover:bg-[var(--color-hover)]">
-              <span className="rail-card grid size-9 shrink-0 place-items-center rounded-full text-ink">
-                <Keyboard className="size-[17px]" strokeWidth={1.6} aria-hidden />
-              </span>
-              <span className="rail-label flex min-w-0 flex-1 flex-col gap-0.5 leading-tight">
-                <span className="text-[13px] font-semibold text-ink">Shortcuts</span>
-                <span className="text-[11.5px] text-faint">Press ? any time</span>
-              </span>
-              <MoreHorizontal className="rail-label mr-1 size-[18px] shrink-0 text-muted" strokeWidth={1.8} aria-hidden />
-            </button>
-          ) : (
-            <button type="button" onClick={() => setPref('railOpen', true)} aria-label={toggle} title={`${toggle} ([)`} className="rail-item">
-              <span className="rail-icon">
-                <Toggle className="size-[18px]" strokeWidth={1.6} aria-hidden />
-              </span>
-            </button>
-          )}
         </div>
       </div>
     </aside>
   )
 }
 
-function RailLink({ to, label, icon: Icon, end, hint, open, count }: (typeof NAV)[number] & { open: boolean; count?: number }) {
+function RailLink({ to, label, icon: Icon, end, open, count }: (typeof NAV)[number] & { open: boolean; count?: number }) {
   // An analysis belongs to the history it was opened from.
   const inHistory = useLocation().pathname.startsWith('/analysis/') && to === '/history'
   return (
@@ -358,18 +326,13 @@ function RailLink({ to, label, icon: Icon, end, hint, open, count }: (typeof NAV
       to={to}
       end={end}
       data-lens-item
-      title={open ? (hint ? `${label} (${hint})` : undefined) : hint ? `${label} (${hint})` : label}
+      title={open ? undefined : label}
       className={({ isActive }) => `rail-item ${isActive || inHistory ? 'is-on' : ''}`}
     >
       <span className="rail-icon">
         <Icon className="size-[19px]" strokeWidth={1.5} aria-hidden />
       </span>
       <span className="rail-label min-w-0 flex-1">{label}</span>
-      {hint && (
-        <kbd className="kbd rail-label" aria-hidden>
-          {hint}
-        </kbd>
-      )}
       {!!count && (
         <span className="kbd rail-label tabular-nums" aria-hidden>
           {count}
@@ -422,13 +385,13 @@ function crumbs(pathname: string): string[] {
 
 /**
  * The desktop's top bar, after the reference's: where you are on the left; a search of the
- * history, light or dark, and the shortcuts on the right, over a hairline that runs the page's width.
+ * history and light or dark on the right, over a hairline that runs the page's width.
  */
-function DeskBar({ theme, onShortcuts }: { theme: 'light' | 'dark'; onShortcuts: () => void }) {
+function DeskBar({ theme }: { theme: 'light' | 'dark' }) {
   const { pathname } = useLocation()
   const trail = crumbs(pathname)
   return (
-    <header className="no-print mb-9 flex h-[72px] items-center justify-between gap-4 border-b border-[var(--hairline)]">
+    <header className="no-print mr-4 flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-[var(--hairline)]">
       <nav aria-label="Breadcrumb" className="min-w-0">
         <ol className="flex items-center gap-2.5 text-[12.5px] whitespace-nowrap">
           <li className="text-faint">
@@ -468,20 +431,6 @@ function DeskBar({ theme, onShortcuts }: { theme: 'light' | 'dark'; onShortcuts:
             )
           })}
         </div>
-        <button type="button" onClick={onShortcuts} className="btn-primary !size-10 !p-0" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
-          <Keyboard className="size-[18px]" strokeWidth={1.7} aria-hidden />
-        </button>
-        {/* where the reference has the person's picture in a white ring: the settings */}
-        <Link
-          to="/settings"
-          aria-label="Settings"
-          title="Settings"
-          className="grid size-11 place-items-center rounded-full bg-[var(--btn-bg)] shadow-[var(--btn-edge)] transition-transform active:scale-95"
-        >
-          <span className="grid size-[34px] place-items-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#6b6d6c,#1b1d1c_70%)] text-[#f4f5f2]">
-            <Settings className="size-4" strokeWidth={1.7} aria-hidden />
-          </span>
-        </Link>
       </div>
     </header>
   )
@@ -514,9 +463,6 @@ function TopSearch() {
           placeholder="Search your history…"
           className="min-w-0 flex-1 self-stretch bg-transparent text-[13.5px] text-ink outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
         />
-        <kbd className="kbd" aria-hidden>
-          /
-        </kbd>
       </label>
     </form>
   )
@@ -530,7 +476,7 @@ function TopBar({ theme }: { theme: 'light' | 'dark' }) {
         <Link to="/" className="rounded-full">
           <Logo />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <ServerBadge compact chip />
           <ThemeToggle resolved={theme} />
         </div>
@@ -588,6 +534,7 @@ function Dock() {
       className="no-print fixed inset-x-0 bottom-0 z-40 flex items-end justify-center gap-3 pr-[max(16px,env(safe-area-inset-right))] pb-[max(12px,env(safe-area-inset-bottom))] pl-[max(16px,env(safe-area-inset-left))] lg:hidden"
       aria-label="Main"
     >
+      <span className="dock-fade pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[calc(100%+32px)]" aria-hidden />
       <AddMenu bar={bar}>
         <div
           ref={bar}

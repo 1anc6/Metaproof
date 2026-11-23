@@ -142,7 +142,7 @@ function Header({ checked, flagged, span, now }: { checked: number; flagged: num
         </p>
       </div>
       <SearchPill className="min-w-0 lg:hidden" />
-      <Link to="/new" className="btn-ghost h-11 shrink-0 gap-2.5 px-5 text-[14px] max-lg:hidden">
+      <Link to="/new" className="btn-ghost h-11 shrink-0 gap-2.5 self-start px-5 text-[14px] max-lg:hidden @4xl:self-auto">
         <Plus className="size-[18px]" strokeWidth={1.8} /> New analysis
       </Link>
     </header>
@@ -214,14 +214,15 @@ function SearchPill({ className = '' }: { className?: string }) {
 function Hero({ flagged, known, span, waiting }: { flagged: number; known: number; span: string; waiting: boolean }) {
   const share = known ? flagged / known : 0
   return (
-    <section aria-labelledby="hero-title" className="panel relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] p-5 @lg:min-h-[400px] @lg:p-6">
+    <section aria-labelledby="hero-title" className="panel @container relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] p-5 @lg:min-h-[400px] @lg:p-6">
       <h2 id="hero-title" className="sr-only">
         Analyze an image
       </h2>
       <div className="flex flex-1 items-center justify-center pt-6 pb-14">
         <HeroForm busy={waiting} className="w-[min(58%,300px)] min-w-[180px] translate-x-[-4%]" />
       </div>
-      <div className="grid gap-3 @lg:flex @lg:flex-wrap @lg:items-end @lg:justify-between">
+      {/* the hero's own width decides: side by side when both fit, else one above the other */}
+      <div className="grid gap-3 @md:grid-cols-[auto_minmax(0,1fr)] @md:items-end @lg:flex @lg:justify-between">
         <Link
           to="/new"
           className="group flex h-12 items-center justify-between gap-5 rounded-full bg-[var(--btn-bg)] pr-1.5 pl-5 text-[13px] font-medium text-ink shadow-[var(--btn-edge)] transition-[transform,background-color] hover:bg-[var(--btn-hover)] active:scale-[0.98]"
@@ -388,7 +389,7 @@ function Images({ entries, blur, span, firstVisit }: { entries: HistoryEntry[]; 
                 : `Nothing checked ${span}`}
           </p>
         </div>
-        <Link to="/new" className="icon-btn size-9" aria-label="New analysis" title="New analysis (N)">
+        <Link to="/new" className="icon-btn size-9" aria-label="New analysis" title="New analysis">
           <Plus className="size-[18px]" strokeWidth={1.7} />
         </Link>
       </div>
@@ -870,7 +871,7 @@ function Spotlight({
           <br />
           {words[1]}
         </span>
-        <span className="mt-auto text-[13px] text-faint">No image was edited or AI-generated.</span>
+        <span className="mt-auto pt-4 text-[13px] text-faint">No image was edited or AI-generated.</span>
       </span>
       <span className="absolute top-4 right-4 bottom-4 w-[36%] overflow-hidden rounded-[20px]">
         <Placeholder icon={ShieldCheck} />
@@ -915,10 +916,12 @@ function SpotCard({
           {words[1]}
         </span>{' '}
         {note && <span className="mt-2 text-fine leading-snug text-faint">{note}</span>}
+        {/* at least a little room above the knob, however much the words take */}
+        <span className="min-h-4 flex-1" aria-hidden />
         {/* the reference's slide-to-unlock: on hover the white knob runs to the end of its track. Its
             carrier is the track's width less the knob's, so moving the carrier by its own width
             lands the knob at the end on any card. */}
-        <span className="relative mt-auto block h-11 w-full max-w-[118px] shrink-0 rounded-full bg-[var(--btn-bg)] shadow-[var(--btn-edge)]" aria-hidden>
+        <span className="relative block h-11 w-full max-w-[118px] shrink-0 rounded-full bg-[var(--btn-bg)] shadow-[var(--btn-edge)]" aria-hidden>
           <span className="absolute top-1 right-10 bottom-1 left-1 transition-transform duration-300 ease-(--ease-drawer) group-hover:translate-x-full">
             <span className="grid size-9 place-items-center rounded-full bg-[var(--white-pill)] text-[var(--pill-ink)] shadow-[0_4px_10px_-4px_rgb(0_0_0/0.5)]">
               <ArrowRight className="size-4" strokeWidth={2.2} />

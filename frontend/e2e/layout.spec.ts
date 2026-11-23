@@ -35,6 +35,28 @@ test("desktop: the sidebar runs the height of the glass window with the screens'
   await expect.poll(async () => (await page.locator('aside .rail').boundingBox())!.width).toBe(252)
 })
 
+test('desktop: the window fits the screen and the page scrolls inside it, with one fold control at the top and no extra buttons', async ({ page }) => {
+  await seedHistory(page)
+  await page.setViewportSize({ width: 1258, height: 673 })
+  await page.goto('/')
+  await page.locator('main section').first().waitFor()
+  // the document never scrolls, so all four corners of the window stay in view
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(673)
+  const scroller = page.locator('#main').locator('..')
+  expect(await scroller.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+  // the sidebar is the screens and the server: the fold control sits by the name, open or folded
+  const rail = (await page.locator('aside .rail').boundingBox())!
+  for (const name of ['Collapse sidebar', 'Expand sidebar']) {
+    const toggle = page.getByRole('button', { name })
+    expect((await toggle.boundingBox())!.y - rail.y).toBeLessThan(110)
+    await toggle.click()
+  }
+  await expect(page.locator('aside').getByRole('link', { name: /New analysis/ })).toHaveCount(1) // the screen, no second pill
+  // no shortcut buttons, and the top bar keeps only the search and the theme
+  await expect(page.getByRole('button', { name: 'Keyboard shortcuts' })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Settings' })).toHaveCount(1)
+})
+
 test('phones and tablets: a floating tab bar of four screens as icons, with New analysis floating beside it', async ({ page }) => {
   for (const width of [360, 390, 430, 768]) {
     await page.setViewportSize({ width, height: 844 })
