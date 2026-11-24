@@ -25,23 +25,29 @@ export function ReportView({ job, filename }: { job: Job; filename?: string }) {
       ? leansRealSummary(job)
       : `Some evidence points to an ${lean.label} image, but not enough to decide. Treat it as unverified.`
     : v.summary
+  const actionsTitle = lean ? `${v.title}, leaning ${lean.label}` : v.title
   const completed = job.analyzers.filter((a) => a.ok).length
   const evidence = job.analyzers.reduce((n, a) => n + a.findings.filter((f) => f.signal !== 'neutral').length, 0)
 
   return (
     <div className="flex flex-col gap-4">
-      <nav aria-label="Breadcrumb" className="no-print -mt-1 flex min-w-0 items-center gap-3 lg:-mt-3">
-        <Link to="/history" className="icon-btn size-9" aria-label="Back to history">
-          <ArrowLeft className="size-4" strokeWidth={1.8} />
-        </Link>
-        <p className="flex min-w-0 items-center gap-1.5 text-[14px] text-faint">
-          <Link to="/history" className="shrink-0 hover:text-ink">
-            History
+      {/* the way back on the left; on a desktop the report's actions on the right of the same row,
+          so the verdict card keeps to the verdict and fits the first screen beside the image */}
+      <div className="no-print -mt-1 flex items-center justify-between gap-4 lg:-mt-3">
+        <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-3">
+          <Link to="/history" className="icon-btn size-9 shrink-0" aria-label="Back to history">
+            <ArrowLeft className="size-4" strokeWidth={1.8} />
           </Link>
-          <span aria-hidden>/</span>
-          {filename ? <FileName name={filename} className="font-medium text-ink" /> : <span className="font-medium text-ink">Report</span>}
-        </p>
-      </nav>
+          <p className="flex min-w-0 items-center gap-1.5 text-[14px] text-faint">
+            <Link to="/history" className="shrink-0 hover:text-ink">
+              History
+            </Link>
+            <span aria-hidden>/</span>
+            {filename ? <FileName name={filename} className="font-medium text-ink" /> : <span className="font-medium text-ink">Report</span>}
+          </p>
+        </nav>
+        <Actions job={job} title={actionsTitle} bar />
+      </div>
 
       {/* The image beside its verdict: one outcome, its place on the scale, one sentence, three facts. */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -99,24 +105,26 @@ export function ReportView({ job, filename }: { job: Job; filename?: string }) {
             </p>
           )}
 
-          <VerdictSpectrum label={verdict.label} lean={lean} className="mt-5" />
-          <p className="mt-5 text-[15px] leading-relaxed text-ink">{summary}</p>
+          <VerdictSpectrum label={verdict.label} lean={lean} className="mt-5 lg:mt-4" />
+          <p className="mt-5 text-[15px] leading-relaxed text-ink lg:mt-4">{summary}</p>
 
           {/* three facts in one strip, split by thin dividers */}
-          <dl className="well mt-5 grid grid-cols-3 rounded-[18px] py-3">
+          <dl className="well mt-5 grid grid-cols-3 rounded-[18px] py-3 lg:mt-4">
             <Indicator label="Checks completed" value={`${completed}/${job.analyzers.length}`} />
             <Indicator label="Evidence found" value={evidence === 0 ? 'None' : String(evidence)} />
             <Indicator label="Detector score" value={reading ? String(reading.pct) : '—'} unit={reading ? '/ 100' : undefined} />
           </dl>
+          {/* what the pixel detector made of it, then how to read its score */}
           {reading && (
             <p className="mt-2.5 text-fine leading-relaxed text-faint">
-              The detector score is how closely the pixels resemble the AI images the model learned from. It often misses
-              newer generators, so it is one signal among the checks, not the chance that this image is AI-generated.
+              <span className="font-semibold text-ink">Pixel detector: {reading.band.label}.</span> The detector score is how
+              closely the pixels resemble the AI images the model learned from. It often misses newer generators, so it is one
+              signal among the checks, not the chance that this image is AI-generated.
             </p>
           )}
 
           <EvidenceChips job={job} verdict={verdict} />
-          <Actions job={job} title={lean ? `${v.title}, leaning ${lean.label}` : v.title} />
+          <Actions job={job} title={actionsTitle} />
         </section>
       </section>
 
@@ -235,8 +243,13 @@ const nativeShare =
   typeof navigator.share === 'function' &&
   window.matchMedia('(pointer: coarse)').matches
 
-function Actions({ job, title }: { job: Job; title: string }) {
+function Actions({ job, title, bar = false }: { job: Job; title: string; bar?: boolean }) {
   const sha = job.media.sha256
+  // in the row: as tall as the back button, and where the page is too narrow for their names
+  // beside the way back, the three show only their icons, named in a tooltip
+  const slim = bar ? 'h-9 gap-1.5 px-3.5 text-[13.5px]' : ''
+  const icon = bar ? 'h-9 gap-1.5 px-3.5 text-[13.5px] @max-[52rem]/main:w-9 @max-[52rem]/main:px-0' : ''
+  const named = bar ? 'max-sm:hidden @max-[52rem]/main:hidden' : 'max-sm:hidden'
   const shareUrl = `${window.location.origin}/report/${sha}`
   const share = async () => {
     if (nativeShare) {
@@ -255,24 +268,25 @@ function Actions({ job, title }: { job: Job; title: string }) {
     }
   }
   return (
-    // On a phone the three go side by side with a word each; their names keep the whole phrase.
-    <div className="no-print mt-5 grid grid-cols-3 gap-2.5 sm:flex sm:flex-wrap">
-      <button type="button" onClick={share} aria-label={nativeShare ? 'Share report' : 'Copy share link'} className="btn-ghost max-sm:px-2">
+    // On a phone the three go side by side with a word each; their names keep the whole phrase. On a
+    // desktop they sit in the row of the way back, at its height.
+    <div className={bar ? 'no-print flex shrink-0 items-center gap-2 max-lg:hidden' : 'no-print mt-5 grid grid-cols-3 gap-2.5 sm:flex sm:flex-wrap lg:hidden'}>
+      <button type="button" onClick={share} aria-label={nativeShare ? 'Share report' : 'Copy share link'} title={bar ? (nativeShare ? 'Share report' : 'Copy share link') : undefined} className={`btn-ghost max-sm:px-2 ${icon}`}>
         {nativeShare ? <Share2 className="size-4" strokeWidth={1.7} /> : <Link2 className="size-4" strokeWidth={1.7} />}
         <span className="sm:hidden">Share</span>
-        <span className="max-sm:hidden">{nativeShare ? 'Share report' : 'Copy share link'}</span>
+        <span className={named}>{nativeShare ? 'Share report' : 'Copy share link'}</span>
       </button>
-      <button type="button" onClick={() => window.print()} aria-label="Save as PDF" className="btn-ghost max-sm:px-2">
+      <button type="button" onClick={() => window.print()} aria-label="Save as PDF" title={bar ? 'Save as PDF' : undefined} className={`btn-ghost max-sm:px-2 ${icon}`}>
         <Printer className="size-4" strokeWidth={1.7} />
         <span className="sm:hidden">PDF</span>
-        <span className="max-sm:hidden">Save as PDF</span>
+        <span className={named}>Save as PDF</span>
       </button>
-      <button type="button" onClick={() => downloadJson(job)} aria-label="Download JSON" className="btn-ghost max-sm:px-2">
+      <button type="button" onClick={() => downloadJson(job)} aria-label="Download JSON" title={bar ? 'Download JSON' : undefined} className={`btn-ghost max-sm:px-2 ${icon}`}>
         <FileJson className="size-4" strokeWidth={1.7} />
         <span className="sm:hidden">JSON</span>
-        <span className="max-sm:hidden">Download JSON</span>
+        <span className={named}>Download JSON</span>
       </button>
-      <Link to="/new" className="btn-primary col-span-3 sm:ml-auto">
+      <Link to="/new" className={`btn-primary col-span-3 sm:ml-auto ${slim}`}>
         <Plus className="size-4" strokeWidth={2.4} /> Analyze another
       </Link>
     </div>
@@ -811,9 +825,9 @@ function EvidenceChips({ job, verdict }: { job: Job; verdict: Verdict }) {
   // The detector disagrees with a verdict that other evidence carried.
   const missedAi = verdict.label === 'likely_ai_generated' && reading && !flagsAi && source !== SOURCE.detector
   const outweighed = verdict.label === 'likely_authentic' && flagsAi
-  if (!(source && verdict.label !== 'inconclusive') && !reading) return null
+  if (!(source && verdict.label !== 'inconclusive') && !missedAi && !outweighed) return null
   return (
-    <div className="mt-4 flex flex-wrap items-start gap-2">
+    <div className="mt-4 flex flex-wrap items-start gap-2 lg:mt-3">
       {/* shrink lets a chip wrap its words on the narrowest phones instead of running off the card */}
       {source && verdict.label !== 'inconclusive' && (
         <span className="chip h-auto min-h-8 min-w-0 shrink gap-2 py-1.5 text-[13px] whitespace-normal">
@@ -821,15 +835,6 @@ function EvidenceChips({ job, verdict }: { job: Job; verdict: Verdict }) {
           <span>
             <span className="text-muted">{settled ? 'Decided by ' : 'Mainly from '}</span>
             <span className="font-semibold">{source}</span>
-          </span>
-        </span>
-      )}
-      {reading && (
-        <span className="chip h-auto min-h-8 min-w-0 shrink gap-2 py-1.5 text-[13px] whitespace-normal">
-          <Sparkles className="size-4 shrink-0 text-accent" strokeWidth={1.8} />
-          <span>
-            <span className="text-muted">Pixel detector: </span>
-            <span className="font-semibold">{reading.band.label}</span>
           </span>
         </span>
       )}

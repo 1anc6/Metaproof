@@ -205,3 +205,39 @@ test('phones: every screen opens under the top bar, a hairline beneath it, with 
   await expect(page.getByRole('searchbox', { name: 'Search by filename' })).toBeFocused()
 })
 
+
+test("desktop: a report's image and verdict fit the first screen whole, its actions beside the way back", async ({ page }) => {
+  await seedHistory(page)
+  // the longest verdict card: AI by other evidence, which the pixel detector missed
+  const detector = { analyzer: 'detector', version: '1.0.0', ok: true, duration_ms: 90, error: null, findings: [], raw: { available: true, p_ai: 0.08 } }
+  const verdict = {
+    ...job.verdict,
+    label: 'likely_ai_generated',
+    inconclusive_reason: null,
+    confidence: 0.9,
+    scores: { authentic: 0, edited: 0, ai: 3 },
+    top_reasons: [{ code: 'meta.generator', signal: 'ai', strength: 'strong', message: 'Stable Diffusion settings in the PNG text.' }],
+  }
+  await page.route(`**/api/media/${SHA}/report`, (route) => route.fulfill({ json: { ...job, verdict, analyzers: [...job.analyzers, detector] } }))
+  for (const [width, height] of [
+    [1279, 676],
+    [1366, 657],
+    [1920, 1000],
+  ]) {
+    await page.setViewportSize({ width, height })
+    await page.goto(`/report/${SHA}`)
+    const verdictCard = page.locator('section[aria-labelledby="verdict-title"]')
+    for (const card of [page.locator('main figure').first(), verdictCard]) {
+      const box = (await card.boundingBox())!
+      expect(box.y + box.height, `${width}x${height}`).toBeLessThanOrEqual(height - 16)
+    }
+    // the detector's reading leads its note, and the actions are in the row with the way back
+    await expect(verdictCard.getByText('Pixel detector: Looks like a camera photo.')).toBeVisible()
+    const back = (await page.getByRole('link', { name: 'Back to history' }).boundingBox())!
+    for (const name of ['Copy share link', 'Save as PDF', 'Download JSON']) {
+      const action = (await page.getByRole('button', { name }).boundingBox())!
+      expect(Math.abs(action.y + action.height / 2 - (back.y + back.height / 2)), name).toBeLessThanOrEqual(1)
+    }
+    await expect(page.getByRole('link', { name: 'Analyze another' })).toHaveCount(1)
+  }
+})
