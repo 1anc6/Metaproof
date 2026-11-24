@@ -81,7 +81,7 @@ export function Overview() {
       {/* On a desktop the first two cards fit the first screen whole, as the reference's do, with
           the next row just showing below them: the row takes the screen's height less what lies
           above it, within bounds. */}
-      <div ref={topRow} className="grid grid-cols-1 gap-4 [--top-h:clamp(340px,calc(100dvh-300px),480px)] @4xl/main:h-(--top-h) @4xl/main:grid-cols-2">
+      <div ref={topRow} className="grid grid-cols-1 gap-4 [--top-h:clamp(340px,calc(100dvh-300px),480px)] @4xl/main:mb-4 @4xl/main:h-(--top-h) @4xl/main:grid-cols-2">
         <Hero flagged={flagged} known={t.known} span={span} waiting={waiting} />
         <Latest history={history} done={done} data={data} period={period} span={span} waiting={waiting} example={example} now={now} counts={t.counts} known={t.known} />
       </div>
