@@ -217,6 +217,26 @@ test('phones: every screen opens under the top bar, a hairline beneath it, with 
 })
 
 
+test("desktop: the cards under an inconclusive verdict share the edges of the image and the verdict above", async ({ page }) => {
+  await seedHistory(page)
+  for (const width of [1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto(`/analysis/${JOB_ID}`)
+    const why = page.getByRole('region', { name: 'Why it is inconclusive' })
+    await why.waitFor()
+    const figure = (await page.locator('main figure').boundingBox())!
+    const verdict = (await page.locator('section[aria-labelledby="verdict-title"]').boundingBox())!
+    const [reason, looked] = await why.locator('> div').all()
+    const reasonBox = (await reason.boundingBox())!
+    const lookedBox = (await looked.boundingBox())!
+    // the same two columns and the same gap between them as the row above
+    expect(Math.round(reasonBox.x), `${width}px: left edge`).toBe(Math.round(figure.x))
+    expect(Math.round(reasonBox.x + reasonBox.width), `${width}px: left card's right edge`).toBe(Math.round(figure.x + figure.width))
+    expect(Math.round(lookedBox.x), `${width}px: right card's left edge`).toBe(Math.round(verdict.x))
+    expect(Math.round(lookedBox.x + lookedBox.width), `${width}px: right edge`).toBe(Math.round(verdict.x + verdict.width))
+  }
+})
+
 test("desktop: a report's image and verdict fit the first screen whole, its actions beside the way back", async ({ page }) => {
   await seedHistory(page)
   // the longest verdict card: AI by other evidence, which the pixel detector missed

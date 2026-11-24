@@ -903,12 +903,13 @@ const CHECK_STATE: Record<CheckState, { label: string; icon: typeof CircleCheck 
   skipped: { label: 'Not checked', icon: CircleSlash },
 }
 
-/** For an inconclusive verdict: why, in words about this image, and what was looked for but missing. */
+/** For an inconclusive verdict: why, in words about this image, and what was looked for but missing.
+ *  Two cards cut on the same columns as the image and the verdict above, so their edges line up. */
 function WhyInconclusive({ job }: { job: Job }) {
   const reason = job.verdict?.inconclusive_reason
   return (
-    <section className="panel grid gap-5 rounded-[28px] p-5 sm:p-6 lg:grid-cols-12 lg:gap-8" aria-labelledby="why-title">
-      <div className="lg:col-span-5">
+    <section className="grid grid-cols-1 gap-4 lg:grid-cols-12" aria-labelledby="why-title">
+      <div className="panel rounded-[28px] p-5 sm:p-6 lg:col-span-5">
         <PanelTitle id="why-title" title="Why it is inconclusive" status={reason && <span className="tag">{INCONCLUSIVE_REASONS[reason].title}</span>} />
         {whyInconclusive(job).map((line, i) => (
           <p key={i} className={`text-[15px] leading-relaxed ${i === 0 ? 'mt-3 text-ink' : 'mt-2.5 text-muted'}`}>
@@ -919,7 +920,7 @@ function WhyInconclusive({ job }: { job: Job }) {
           Missing evidence never counts against an image; it only leaves less to decide on.
         </p>
       </div>
-      <div className="lg:col-span-7">
+      <div className="panel rounded-[28px] p-5 sm:p-6 lg:col-span-7">
         <h3 className="label">What MetaProof looked for</h3>
         <ul className="mt-1 flex flex-col">
           {evidenceChecklist(job).map((item) => {
