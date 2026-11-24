@@ -241,3 +241,31 @@ test("desktop: a report's image and verdict fit the first screen whole, its acti
     await expect(page.getByRole('link', { name: 'Analyze another' })).toHaveCount(1)
   }
 })
+
+test("desktop: every screen's first row of cards shows whole on a laptop's first screen", async ({ page }) => {
+  await seedHistory(page)
+  // an analysis under way, for its progress screen
+  await page.route(`**/api/analyses/${JOB_ID}`, (route) => route.fulfill({ json: { ...job, status: 'running', verdict: null, current_step: 'watermark' } }))
+  const screens = ['/', '/new', '/history', '/server', '/method', '/settings', `/report/${SHA}`, `/analysis/${JOB_ID}`]
+  for (const [width, height] of [
+    [1276, 664],
+    [1366, 657],
+  ]) {
+    await page.setViewportSize({ width, height })
+    for (const path of screens) {
+      await page.goto(path)
+      await page.locator('main .panel').first().waitFor()
+      await page.waitForTimeout(300) // the figures and fonts in
+      // the cards that open the page, side by side: the outermost panels at the top of the page
+      const bottoms = await page.evaluate(() => {
+        const panels = Array.from(document.querySelectorAll<HTMLElement>('main .panel'))
+          .filter((el) => !el.parentElement?.closest('.panel') && el.offsetParent)
+          .map((el) => el.getBoundingClientRect())
+          .filter((r) => r.height > 0)
+        const top = Math.min(...panels.map((r) => r.top))
+        return panels.filter((r) => r.top < top + 6).map((r) => Math.round(r.bottom))
+      })
+      for (const bottom of bottoms) expect(bottom, `${path} at ${width}x${height}`).toBeLessThanOrEqual(height - 16)
+    }
+  }
+})

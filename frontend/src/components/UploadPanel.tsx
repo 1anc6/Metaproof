@@ -128,7 +128,7 @@ export function UploadPanel({
           setDragging(false)
           if (!busy) takeAll(e.dataTransfer.files)
         }}
-        className={`zone flex flex-1 flex-col items-center justify-center rounded-[24px] px-5 pt-6 pb-6 text-center transition ${
+        className={`zone flex flex-1 flex-col items-center justify-center rounded-[24px] px-5 pt-6 pb-6 text-center transition short-desk:py-4 ${
           busy ? '' : 'cursor-pointer hover:bg-[var(--panel-hover)]'
         } ${dragging ? '!border-primary bg-accent-soft' : ''}`}
       >
@@ -138,12 +138,12 @@ export function UploadPanel({
         {/* The lime disc swells while a file is held over the zone, and its glow breathes then and
             while uploading. */}
         <span
-          className={`orb mt-5 size-[112px] transition-transform duration-300 sm:size-[124px] ${dragging ? 'scale-105' : ''} ${dragging || busy ? 'orb-live' : ''}`}
+          className={`orb mt-5 size-[112px] transition-transform duration-300 sm:size-[124px] short-desk:mt-4 short-desk:size-[88px] ${dragging ? 'scale-105' : ''} ${dragging || busy ? 'orb-live' : ''}`}
           aria-hidden
         >
           <Upload className="size-10" strokeWidth={1.8} />
         </span>
-        <p className="mt-6 max-w-[38ch] text-[14px] leading-relaxed text-faint">
+        <p className="mt-6 max-w-[38ch] text-[14px] leading-relaxed text-faint short-desk:mt-4 short-desk:max-w-[52ch]">
           For the clearest verdict, upload the original file rather than a screenshot. JPEG, PNG, WebP, TIFF or HEIC, up
           to {MAX_MB} MB and {MAX_MP} megapixels.{autoStart && ` Choose up to ${MAX_BATCH} at once.`}
         </p>
@@ -224,7 +224,7 @@ export function UploadPanel({
           )}
         </button>
       </div>
-      <p className="mt-3 mb-1 px-2 text-[13px] text-faint">
+      <p className="mt-3 mb-1 px-2 text-[13px] text-faint short-desk:mt-2.5 short-desk:mb-0.5">
         {busy ? 'If the server was asleep, the first upload can take up to a minute. ' : 'The file is deleted after the analysis. '}
         <Link to={DEMO_REPORT_PATH} className="font-medium text-accent hover:underline">
           See an example report

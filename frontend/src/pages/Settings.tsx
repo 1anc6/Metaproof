@@ -27,72 +27,77 @@ export function Settings() {
         subtitle="There are no accounts: everything here applies to this browser only."
       />
 
-      {/* Source order is the phone order and the reading order. On desktop CSS columns split the
-          cards into two stacks of about equal height, without changing that order. */}
-      <div className="flex flex-col gap-4 lg:block lg:columns-2 lg:gap-4 lg:[&>*]:mb-4 lg:[&>*]:break-inside-avoid">
-        <Card title="Appearance">
-          <p className="text-[14.5px] text-muted">Light, dark, or follow this device's setting. Saved in this browser.</p>
-          <ThemeSwitch labels className="mt-4" />
-        </Card>
+      {/* Source order is the phone order and the reading order. On a desktop the two short cards
+          make the first row, whole on the first screen, as every page's first row is; below it the
+          server's card on the left and the other two stacked on the right. */}
+      <div className="flex flex-col gap-4">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card title="Appearance">
+            <p className="text-[14.5px] text-muted">Light, dark, or follow this device's setting. Saved in this browser.</p>
+            <ThemeSwitch labels className="mt-4" />
+          </Card>
 
-        <Card title="This device">
-          <p className="flex items-baseline gap-2">
-            <span className="num text-[44px] leading-none">{history.length}</span>
-            <span className="text-[14px] text-faint">saved here</span>
-          </p>
-          <p className="mt-3 text-[14.5px] text-muted">
-            {history.length === 0
-              ? 'No analyses saved in this browser.'
-              : `${history.length === 1 ? 'analysis' : 'analyses'} in this browser. Latest: ${formatWhen(history[0].uploadedAt)}.`.replace(/^./, (c) => c.toUpperCase())}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={history.length === 0}
-              onClick={() => exportHistory(history)}
-              className="btn-ghost btn-sm"
-            >
-              <Download className="size-4" strokeWidth={1.7} /> Export list
-            </button>
-            <button
-              type="button"
-              disabled={history.length === 0}
-              onClick={clearWithUndo}
-              className="btn-ghost btn-sm !text-ai"
-            >
-              <Trash2 className="size-4" strokeWidth={1.7} /> Clear history
-            </button>
-          </div>
-        </Card>
+          <Card title="This device">
+            <p className="flex items-baseline gap-2">
+              <span className="num text-[44px] leading-none">{history.length}</span>
+              <span className="text-[14px] text-faint">saved here</span>
+            </p>
+            <p className="mt-3 text-[14.5px] text-muted">
+              {history.length === 0
+                ? 'No analyses saved in this browser.'
+                : `${history.length === 1 ? 'analysis' : 'analyses'} in this browser. Latest: ${formatWhen(history[0].uploadedAt)}.`.replace(/^./, (c) => c.toUpperCase())}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={history.length === 0}
+                onClick={() => exportHistory(history)}
+                className="btn-ghost btn-sm"
+              >
+                <Download className="size-4" strokeWidth={1.7} /> Export list
+              </button>
+              <button
+                type="button"
+                disabled={history.length === 0}
+                onClick={clearWithUndo}
+                className="btn-ghost btn-sm !text-ai"
+              >
+                <Trash2 className="size-4" strokeWidth={1.7} /> Clear history
+              </button>
+            </div>
+          </Card>
+        </div>
 
-        <InstallCard />
+        <div className="grid items-start gap-4 lg:grid-cols-2 lg:grid-rows-[auto_1fr]">
+          <InstallCard className="lg:col-start-2 lg:row-start-1" />
 
-        <Card title="Server" action={<ServerBadge />}>
-          <ServiceFigures />
-          <p className="mt-4 text-[13px] text-faint">
-            The API runs on a free instance that sleeps when idle, so the first upload after a quiet
-            spell can take up to a minute.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link to="/server" className="btn-ghost btn-sm">
-              <ChartColumn className="size-4" strokeWidth={1.7} /> Server usage
-            </Link>
-            <a href="https://github.com/1anc6/metaproof" target="_blank" rel="noreferrer" className="btn-ghost btn-sm">
-              <GithubMark className="size-4" /> Source code
-            </a>
-          </div>
-        </Card>
+          <Card title="Server" action={<ServerBadge />} className="lg:col-start-1 lg:row-span-2 lg:row-start-1">
+            <ServiceFigures />
+            <p className="mt-4 text-[13px] text-faint">
+              The API runs on a free instance that sleeps when idle, so the first upload after a quiet
+              spell can take up to a minute.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link to="/server" className="btn-ghost btn-sm">
+                <ChartColumn className="size-4" strokeWidth={1.7} /> Server usage
+              </Link>
+              <a href="https://github.com/1anc6/metaproof" target="_blank" rel="noreferrer" className="btn-ghost btn-sm">
+                <GithubMark className="size-4" /> Source code
+              </a>
+            </div>
+          </Card>
 
-        <Card title="Privacy and data">
-          <ul className="flex flex-col gap-2.5">
-            {PRIVACY.map((line) => (
-              <li key={line} className="flex gap-3 text-[14.5px] leading-relaxed text-muted">
-                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
-                {line}
-              </li>
-            ))}
-          </ul>
-        </Card>
+          <Card title="Privacy and data" className="lg:col-start-2 lg:row-start-2">
+            <ul className="flex flex-col gap-2.5">
+              {PRIVACY.map((line) => (
+                <li key={line} className="flex gap-3 text-[14.5px] leading-relaxed text-muted">
+                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
       </div>
     </div>
   )
@@ -242,10 +247,10 @@ function Figure({ label, value, note }: { label: string; value: string; note?: s
   )
 }
 
-function InstallCard() {
+function InstallCard({ className = '' }: { className?: string }) {
   const state = useInstallState()
   return (
-    <Card title="Install the app">
+    <Card title="Install the app" className={className}>
       {state === 'installed' && (
         <p className="text-[14.5px] leading-relaxed text-muted">
           MetaProof is installed on this device. On Android, share any photo to it from your gallery,

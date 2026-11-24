@@ -114,12 +114,13 @@ function Progress({ job, filename, preview }: { job: Job | null; filename?: stri
     <div>
       <PageHeader eyebrow="Analysis under way" title="Reading the evidence" subtitle="Six checks run on the file, then the evidence is weighed." />
 
-      {/* One column on phones, set explicitly: an implicit column would grow to the caption's
-          unwrapped width and push both panels off the side of the screen. */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      {/* One column, the progress first, until the page is wide enough for the two side by side:
+          set explicitly, since an implicit column would grow to the caption's unwrapped width and
+          push both panels off the side of the screen. */}
+      <div className="grid grid-cols-1 gap-4 @4xl/main:grid-cols-12">
         {/* The upload, whole, over a blurred copy of itself. */}
-        <figure className="panel flex min-w-0 flex-col rounded-[28px] p-2.5 max-lg:order-2 lg:col-span-7">
-          <div className="relative grid min-h-[clamp(200px,52vw,380px)] flex-1 place-items-center overflow-hidden rounded-[20px] bg-[var(--frame-bg)]">
+        <figure className="panel flex min-w-0 flex-col rounded-[28px] p-2.5 order-2 @4xl/main:order-none @4xl/main:col-span-4">
+          <div className="relative grid min-h-[clamp(200px,52vw,380px)] flex-1 place-items-center overflow-hidden rounded-[20px] bg-[var(--frame-bg)] @4xl/main:min-h-0">
             {preview ? (
               <>
                 <img src={preview} alt="" aria-hidden className="absolute inset-0 size-full scale-125 object-cover opacity-50 blur-2xl" />
@@ -136,47 +137,54 @@ function Progress({ job, filename, preview }: { job: Job | null; filename?: stri
           </figcaption>
         </figure>
 
-        <section className="panel flex min-w-0 flex-col rounded-[28px] p-5 lg:col-span-5" aria-label="Progress">
+        <section className="panel @container/progress flex min-w-0 flex-col rounded-[28px] p-5 @4xl/main:col-span-8" aria-label="Progress">
           <PanelTitle
             title={<span ref={title}>{waiting ? 'In queue' : 'Analyzing'}</span>}
             status={<LiveBadge label="Live" reflect={[{ ref: title, strength: 0.8 }]} />}
           />
-          <div aria-live="polite">
-            <Gauge
-              value={pct / 100}
-              figure={pct}
-              unit="%"
-              caption={`${done} of ${STEPS.length} steps done`}
-              colors={['#9fbd40', 'var(--color-primary)']}
-              label={`${pct}% done, ${done} of ${STEPS.length} steps`}
-              className="mx-auto mt-4 w-full max-w-[280px]"
-            />
-          </div>
+          {/* where the card is wide enough, the gauge and the step under way beside the seven steps, so
+              it shows whole on a laptop's first screen */}
+          <div className="flex flex-col @[31rem]/progress:mt-4 @[31rem]/progress:grid @[31rem]/progress:grid-cols-[minmax(0,230px)_minmax(0,1fr)] @[31rem]/progress:items-center @[31rem]/progress:gap-5">
+            <div className="flex flex-col">
+              <div aria-live="polite">
+                <Gauge
+                  value={pct / 100}
+                  figure={pct}
+                  unit="%"
+                  caption={`${done} of ${STEPS.length} steps done`}
+                  colors={['#9fbd40', 'var(--color-primary)']}
+                  label={`${pct}% done, ${done} of ${STEPS.length} steps`}
+                  className="mx-auto mt-4 w-full max-w-[280px] @[31rem]/progress:mt-0"
+                />
+              </div>
 
-          {/* Says what is happening now, with that step's orb; the rows below only change their state. */}
-          <ThinkingPill className="mt-5 w-full" state={now.orb} frame={now.frame} label={now.label} />
-          <ol className="mt-3 flex flex-col">
-            {steps.map((step) => (
-              <li key={step.key} className="flex items-center gap-3 py-[7px] text-[14px]">
-                <span
-                  className={`grid size-[22px] shrink-0 place-items-center rounded-full ${
-                    step.state === 'done'
-                      ? 'bg-primary text-on-primary'
-                      : step.state === 'active'
-                        ? 'raise text-primary ring-2 ring-primary/35'
-                        : 'well text-faint'
-                  }`}
-                  aria-hidden
-                >
-                  {step.state === 'done' ? <Check className="animate-pop size-3" strokeWidth={3} /> : <span className="size-1.5 rounded-full bg-current" />}
-                </span>
-                <span className={`min-w-0 flex-1 ${step.state === 'todo' ? 'text-faint' : 'text-ink'}`}>{step.label}</span>
-                <span className={`text-[13px] ${step.state === 'active' ? 'font-medium text-accent' : 'text-faint'}`}>
-                  {step.state === 'done' ? 'Done' : step.state === 'active' ? 'Running' : 'Waiting'}
-                </span>
-              </li>
-            ))}
-          </ol>
+              {/* Says what is happening now, with that step's orb; the rows only change their state. */}
+              <ThinkingPill className="mt-5 w-full @[31rem]/progress:mt-4" state={now.orb} frame={now.frame} label={now.label} />
+            </div>
+            <ol className="mt-3 flex flex-col @[31rem]/progress:mt-0">
+              {steps.map((step) => (
+                <li key={step.key} className="flex items-center gap-3 py-[7px] text-[14px] @[31rem]/progress:gap-2.5 @[31rem]/progress:py-[5px] @[31rem]/progress:text-[13.5px]">
+                  <span
+                    className={`grid size-[22px] shrink-0 place-items-center rounded-full ${
+                      step.state === 'done'
+                        ? 'bg-primary text-on-primary'
+                        : step.state === 'active'
+                          ? 'raise text-primary ring-2 ring-primary/35'
+                          : 'well text-faint'
+                    }`}
+                    aria-hidden
+                  >
+                    {step.state === 'done' ? <Check className="animate-pop size-3" strokeWidth={3} /> : <span className="size-1.5 rounded-full bg-current" />}
+                  </span>
+                  <span className={`min-w-0 flex-1 ${step.state === 'todo' ? 'text-faint' : 'text-ink'} ${step.state === 'active' ? `@[31rem]/progress:font-medium` : ''}`}>{step.label}</span>
+                  {/* beside the gauge each step's mark tells its state; the words stay for screen readers */}
+                  <span className={`text-[13px] @[31rem]/progress:sr-only ${step.state === 'active' ? 'font-medium text-accent' : 'text-faint'}`}>
+                    {step.state === 'done' ? 'Done' : step.state === 'active' ? 'Running' : 'Waiting'}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
           <p className="mt-auto pt-3 text-[13px] text-faint">
             {job ? 'This usually takes a few seconds.' : 'Connecting to the server… it may be waking up.'}
           </p>

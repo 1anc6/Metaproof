@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* A desktop whose screen is too short for a page's first cards at their full size (a laptop): they
+   tighten so they show whole on landing. */
+@custom-variant short-desk (@media (min-width: 64rem) and (max-height: 760px));
+
 @theme {
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Consolas, monospace;
