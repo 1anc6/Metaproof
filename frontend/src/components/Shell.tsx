@@ -467,36 +467,86 @@ function ThemeSwitch({ theme }: { theme: 'light' | 'dark' }) {
  * would otherwise widen the page.
  */
 function TopBar({ theme }: { theme: 'light' | 'dark' }) {
-  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  // The search stays open on the page it was opened on, so a move to another page closes it.
+  const [openedOn, setOpenedOn] = useState<string | null>(null)
+  const searching = openedOn === pathname
   return (
     <header className="no-print relative z-30 overflow-x-clip px-5 pt-[env(safe-area-inset-top)] sm:px-6 lg:hidden">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 border-b border-[var(--hairline)]">
-        <Link to="/" className="rounded-full">
-          <Logo />
-        </Link>
-        <div className="flex items-center gap-1.5">
-          {/* the history's own search when it is open, else History ready to type */}
-          <button
-            type="button"
-            aria-label="Search history"
-            title="Search history"
-            onClick={(e) => {
-              releaseAfterTap(e)
-              const field = document.getElementById('history-search')
-              if (field?.offsetParent) field.focus()
-              else navigate('/history', { state: { focus: true } })
-            }}
-            className="grid size-10 shrink-0 place-items-center rounded-full text-ink transition-colors hover:bg-[var(--color-hover)] max-[359px]:hidden"
-          >
-            <Search className="size-[19px]" strokeWidth={1.7} aria-hidden />
-          </button>
-          <ThemeSwitch theme={theme} />
-          <span className="ml-1">
-            <ServerBadge compact chip />
-          </span>
-        </div>
+        {searching ? (
+          <PhoneSearch onClose={() => setOpenedOn(null)} />
+        ) : (
+          <>
+            <Link to="/" className="rounded-full">
+              <Logo />
+            </Link>
+            <div className="flex items-center gap-1.5">
+              {/* on the history, its own search takes the focus; anywhere else the bar opens a search in place */}
+              <button
+                type="button"
+                aria-label="Search history"
+                title="Search history"
+                onClick={(e) => {
+                  releaseAfterTap(e)
+                  const field = document.getElementById('history-search')
+                  if (field?.offsetParent) field.focus()
+                  else setOpenedOn(pathname)
+                }}
+                className="grid size-10 shrink-0 place-items-center rounded-full text-ink transition-colors hover:bg-[var(--color-hover)] max-[359px]:hidden"
+              >
+                <Search className="size-[19px]" strokeWidth={1.7} aria-hidden />
+              </button>
+              <ThemeSwitch theme={theme} />
+              <span className="ml-1">
+                <ServerBadge compact chip />
+              </span>
+            </div>
+          </>
+        )}
       </div>
     </header>
+  )
+}
+
+/** The phone bar's search, opened in place of the logo: the words go to History on Enter, as the
+ *  desktop's search sends them, and Escape or Cancel puts the bar back as it was. */
+function PhoneSearch({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate()
+  const [q, setQ] = useState('')
+  return (
+    <form
+      role="search"
+      className="flex min-w-0 flex-1 items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault()
+        navigate('/history', { state: { q: q.trim() } })
+        onClose()
+      }}
+    >
+      <label className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-[var(--btn-bg)] pr-3 pl-3.5 text-faint shadow-[var(--btn-edge)]">
+        <Search className="size-4 shrink-0" strokeWidth={1.8} aria-hidden />
+        <input
+          id="phone-search"
+          name="q"
+          type="search"
+          aria-label="Search history"
+          autoFocus
+          autoComplete="off"
+          spellCheck={false}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') onClose()
+          }}
+          placeholder="Search your history…"
+          className="min-w-0 flex-1 self-stretch bg-transparent text-[16px] text-ink outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
+        />
+      </label>
+      <button type="button" onClick={onClose} className="h-10 shrink-0 rounded-full px-2 text-[14px] text-muted hover:text-ink">
+        Cancel
+      </button>
+    </form>
   )
 }
 

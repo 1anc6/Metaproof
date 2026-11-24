@@ -198,11 +198,22 @@ test('phones: every screen opens under the top bar, a hairline beneath it, with 
     expect(first.y - (under.y + under.height), path).toBeGreaterThanOrEqual(20)
     expect(first.x, path).toBe(20)
   }
-  // on a screen without the history's search, the bar's opens History ready to type
+  // the bar's search opens its field in place, on any screen: Escape puts the bar back, and Enter
+  // hands the words to History, as the desktop's search does
   await page.goto('/')
-  await page.getByRole('banner').getByRole('button', { name: 'Search history' }).click()
+  const bar = page.getByRole('banner')
+  const field = bar.getByRole('searchbox', { name: 'Search history' })
+  await bar.getByRole('button', { name: 'Search history' }).click()
+  await expect(field).toBeFocused()
+  await expect(page).toHaveURL(/\/$/)
+  await field.press('Escape')
+  await expect(field).toHaveCount(0)
+  await expect(bar.getByRole('link', { name: 'MetaProof' })).toBeVisible()
+  await bar.getByRole('button', { name: 'Search history' }).click()
+  await field.fill('cat')
+  await field.press('Enter')
   await expect(page).toHaveURL(/\/history$/)
-  await expect(page.getByRole('searchbox', { name: 'Search by filename' })).toBeFocused()
+  await expect(page.getByRole('searchbox', { name: 'Search by filename' })).toHaveValue('cat')
 })
 
 
