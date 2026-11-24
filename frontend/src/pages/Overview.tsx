@@ -629,7 +629,7 @@ function Latest({
         </h2>
         <PeriodPicker period={period} />
       </div>
-      <div className="mt-6 flex items-start justify-between gap-4 @4xl/main:mt-5">
+      <div className="mt-6 flex items-start justify-between gap-4 max-[420px]:flex-col max-[420px]:items-stretch @4xl/main:mt-5">
         <div className="min-w-0">
           {latest && label ? (
             <>
@@ -656,7 +656,11 @@ function Latest({
           )}
         </div>
         {/* where the reference sets its "↗ 18.2%": the way into the report */}
-        <Link to={to} className="group flex shrink-0 flex-col items-end gap-1 pt-1 text-right max-[420px]:hidden">
+        {/* on a phone it drops under the verdict as a full-width row, so the biggest result stays tappable */}
+        <Link
+          to={to}
+          className="group flex shrink-0 flex-col items-end gap-1 pt-1 text-right max-[420px]:min-h-11 max-[420px]:flex-row max-[420px]:items-center max-[420px]:justify-between max-[420px]:rounded-2xl max-[420px]:border max-[420px]:border-line max-[420px]:px-4 max-[420px]:py-2 max-[420px]:text-left"
+        >
           <span className="flex items-center gap-1 text-[15px] font-semibold tracking-[-0.015em] text-ink">
             <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={2} aria-hidden />
             {latest ? 'Open report' : example ? 'Open example' : 'Analyze'}
