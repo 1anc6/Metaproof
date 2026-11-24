@@ -82,3 +82,33 @@ test('the arrow keys read the activity bars one by one', async ({ page }) => {
   const name = monday.toLocaleDateString(undefined, { weekday: 'long' })
   await expect(days.getByText(new RegExp(`^${name}[^:]*: [0-9]+ analys`))).toBeVisible()
 })
+
+test('the hero form is drawn live and changes shape, holding still for reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  test.skip(!(await page.evaluate(() => !!document.createElement('canvas').getContext('webgl'))), 'this browser has no WebGL')
+  const form = page.locator('.hero-form')
+  await expect(form.locator('canvas')).toBeVisible()
+  await expect(form).toHaveAttribute('data-live', 'true')
+  // one still frame, the same a moment later
+  const still = await form.screenshot({ animations: 'disabled' })
+  await page.waitForTimeout(600)
+  expect((await form.screenshot({ animations: 'disabled' })).equals(still)).toBe(true)
+  // with motion allowed again it moves on
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await expect.poll(async () => (await form.screenshot({ animations: 'disabled' })).equals(still)).toBe(false)
+})
+
+test('where WebGL cannot draw, the still render of the form stands in', async ({ page }) => {
+  await page.addInitScript(() => {
+    const get = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+      return type.startsWith('webgl') ? null : (get as (...a: unknown[]) => unknown).call(this, type, ...rest)
+    } as typeof get
+  })
+  await page.goto('/')
+  const form = page.locator('.hero-form')
+  await expect(form).toHaveAttribute('data-live', 'false')
+  await expect(form.locator('img')).toBeVisible()
+  await expect(form.locator('canvas')).toHaveCount(0)
+})
